@@ -1,0 +1,1720 @@
+{
+	"info": {
+		"_postman_id": "bakimla-api-collection",
+		"name": "Bakimla API",
+		"description": "Bakimla Backend API Collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Ahmet\",\n  \"lastName\": \"Yılmaz\",\n  \"gender\": \"male\",\n  \"email\": \"ahmet@example.com\",\n  \"phoneNumber\": \"5551234567\",\n  \"password\": \"123456\",\n  \"userType\": \"user\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"5551234567\",\n  \"password\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users?userType=user",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"],
+							"query": [
+								{
+									"key": "userType",
+									"value": "user"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get All Employees",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/employees?companyId=507f1f77bcf86cd799439011",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "employees"],
+							"query": [
+								{
+									"key": "companyId",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get User By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Mehmet\",\n  \"lastName\": \"Demir\",\n  \"gender\": \"male\",\n  \"email\": \"mehmet@example.com\",\n  \"phoneNumber\": \"5559876543\",\n  \"password\": \"123456\",\n  \"userType\": \"user\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Create Employee",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\",\n  \"firstName\": \"Ahmet\",\n  \"lastName\": \"Yılmaz\",\n  \"birthDate\": \"1990-05-15\",\n  \"phoneNumber\": \"5551112233\",\n  \"profileImage\": \"https://example.com/profile.jpg\",\n  \"city\": \"İstanbul\",\n  \"district\": \"Kadıköy\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/employee",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "employee"]
+						}
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"507f1f77bcf86cd799439011\",\n  \"firstName\": \"Ahmet\",\n  \"lastName\": \"Yılmaz\",\n  \"username\": \"ahmetyilmaz\",\n  \"email\": \"ahmet@example.com\",\n  \"phoneNumber\": \"5551234567\",\n  \"birthDate\": \"1990-01-15\",\n  \"profileImage\": \"https://example.com/profile.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/profile",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "profile"]
+						}
+					}
+				},
+				{
+					"name": "Update Notification Preferences",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"507f1f77bcf86cd799439011\",\n  \"appointmentReminder\": true,\n  \"campaignNotifications\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/notification-preferences",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "notification-preferences"]
+						}
+					}
+				},
+				{
+					"name": "Update Password",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"507f1f77bcf86cd799439011\",\n  \"currentPassword\": \"123456\",\n  \"newPassword\": \"newpass123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "password"]
+						}
+					}
+				},
+				{
+					"name": "Update User Type",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userType\": \"employee\",\n  \"companyId\": \"507f1f77bcf86cd799439011\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:id/userType",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", ":id", "userType"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Güncellenmiş İsim\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Stores",
+			"item": [
+				{
+					"name": "Get All Stores",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/stores",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "stores"]
+						}
+					}
+				},
+				{
+					"name": "Get Store Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/stores/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "stores", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Store",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\",\n  \"storeName\": \"Kadıköy Şubesi\",\n  \"authorizedPersonName\": \"Ahmet Yılmaz\",\n  \"authorizedPersonTCKN\": \"12345678901\",\n  \"businessName\": \"ABC Mağazası\",\n  \"taxOffice\": \"Kadıköy Vergi Dairesi\",\n  \"taxNumber\": \"1234567890\",\n  \"iban\": \"TR330006100519786457841326\",\n  \"businessDescription\": \"Elektronik ürünler satışı\",\n  \"businessPassword\": \"123456\",\n  \"interiorImage\": \"https://example.com/interior.jpg\",\n  \"exteriorImage\": \"https://example.com/exterior.jpg\",\n  \"appIcon\": \"https://example.com/icon.jpg\",\n  \"workingDays\": [\n    {\n      \"day\": \"monday\",\n      \"startTime\": \"09:00\",\n      \"endTime\": \"18:00\",\n      \"isOpen\": true\n    }\n  ],\n  \"sectors\": [\"Elektronik\"],\n  \"serviceType\": \"Perakende Satış\",\n  \"serviceDuration\": 30,\n  \"servicePrice\": 150.00,\n  \"serviceCategory\": \"Satış\",\n  \"businessField\": \"Elektronik Ürünler\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/stores",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "stores"]
+						}
+					}
+				},
+				{
+					"name": "Get Company Stores",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/stores/company/list",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "stores", "company", "list"]
+						}
+					}
+				},
+				{
+					"name": "Set Active Store",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\",\n  \"storeId\": \"507f1f77bcf86cd799439020\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/stores/company/active",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "stores", "company", "active"]
+						}
+					}
+				},
+				{
+					"name": "Get My Store Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/stores/my-info",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "stores", "my-info"]
+						}
+					}
+				},
+				{
+					"name": "Get Store Customers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/stores/customers",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "stores", "customers"]
+						}
+					}
+				},
+				{
+					"name": "Update Store By Company ID",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\",\n  \"address\": {\n    \"addressName\": \"Ana Mağaza\",\n    \"fullAddress\": \"Atatürk Caddesi No:123\",\n    \"city\": \"İstanbul\",\n    \"district\": \"Kadıköy\",\n    \"building\": \"ABC Plaza\",\n    \"floor\": \"3\",\n    \"apartment\": \"301\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/stores/company",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "stores", "company"]
+						}
+					}
+				},
+				{
+					"name": "Update Store",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"businessName\": \"Güncellenmiş İşletme Adı\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/stores/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "stores", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Get Pending Employees",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/employees/pending",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "employees", "pending"]
+						}
+					}
+				},
+				{
+					"name": "Get All Employees",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/employees?isApproved=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "employees"],
+							"query": [
+								{
+									"key": "isApproved",
+									"value": "true"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Approve Employee",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/employees/:id/approve",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "employees", ":id", "approve"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439014"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Reject Employee",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/employees/:id/reject",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "employees", ":id", "reject"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439014"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Appointments",
+			"item": [
+				{
+					"name": "Create Appointment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customerIds\": [\"507f1f77bcf86cd799439012\"],\n  \"companyId\": \"507f1f77bcf86cd799439011\",\n  \"employeeId\": \"507f1f77bcf86cd799439014\",\n  \"appointmentDate\": \"2024-01-20\",\n  \"appointmentTime\": \"14:00\",\n  \"serviceCategory\": \"Bakım\",\n  \"taskType\": \"Tamir\",\n  \"serviceType\": \"Perakende Satış\",\n  \"serviceDuration\": 60,\n  \"servicePrice\": 250.00,\n  \"paymentMethod\": \"cash\",\n  \"notes\": \"Özel notlar\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "appointments"]
+						}
+					}
+				},
+				{
+					"name": "Get Appointment Summary",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/:id/summary",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "appointments", ":id", "summary"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Company Appointments",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/company?status=pending",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "appointments", "company"],
+							"query": [
+								{
+									"key": "status",
+									"value": "pending"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Employee Appointments",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"507f1f77bcf86cd799439014\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/employee",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "appointments", "employee"]
+						}
+					}
+				},
+				{
+					"name": "Update Appointment",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"completed\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "appointments", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Appointment",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "appointments", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Accounting",
+			"item": [
+				{
+					"name": "Create Accounting Record",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\",\n  \"employeeId\": \"507f1f77bcf86cd799439014\",\n  \"date\": \"2024-01-15\",\n  \"income\": 5000,\n  \"expense\": 2000,\n  \"description\": \"Günlük satışlar\",\n  \"category\": \"Satış\",\n  \"paymentMethod\": \"card\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/accounting",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "accounting"]
+						}
+					}
+				},
+				{
+					"name": "Get All Accounting Records",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/accounting/all",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "accounting", "all"]
+						}
+					}
+				},
+				{
+					"name": "Get Daily Accounting",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\",\n  \"date\": \"2024-01-15\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/accounting/daily",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "accounting", "daily"]
+						}
+					}
+				},
+				{
+					"name": "Get Weekly Accounting",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\",\n  \"startDate\": \"2024-01-15\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/accounting/weekly",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "accounting", "weekly"]
+						}
+					}
+				},
+				{
+					"name": "Get Monthly Accounting",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\",\n  \"year\": 2024,\n  \"month\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/accounting/monthly",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "accounting", "monthly"]
+						}
+					}
+				},
+				{
+					"name": "Get Employee Accounting",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\",\n  \"employeeId\": \"507f1f77bcf86cd799439014\",\n  \"period\": \"daily\",\n  \"date\": \"2024-01-15\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/accounting/employee",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "accounting", "employee"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Notifications",
+			"item": [
+				{
+					"name": "Create Notification",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"507f1f77bcf86cd799439011\",\n  \"title\": \"Yeni Randevu\",\n  \"message\": \"15 Ocak 2024 tarihinde yeni bir randevu oluşturuldu\",\n  \"type\": \"appointment\",\n  \"relatedId\": \"507f1f77bcf86cd799439020\",\n  \"relatedModel\": \"Appointment\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications"]
+						}
+					}
+				},
+				{
+					"name": "Get User Notifications",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"507f1f77bcf86cd799439011\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/user",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "user"]
+						}
+					}
+				},
+				{
+					"name": "Get Unread Notifications",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"507f1f77bcf86cd799439011\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/unread",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "unread"]
+						}
+					}
+				},
+				{
+					"name": "Mark As Read",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/:id/read",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", ":id", "read"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Mark All As Read",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"507f1f77bcf86cd799439011\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/read-all",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "read-all"]
+						}
+					}
+				},
+				{
+					"name": "Delete Notification",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete All Notifications",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"507f1f77bcf86cd799439011\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/all",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "all"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Campaigns",
+			"item": [
+				{
+					"name": "Create Campaign",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\",\n  \"title\": \"Yılbaşı Özel Kampanyası\",\n  \"shortDescription\": \"Tüm hizmetlerde %20 indirim\",\n  \"serviceCategory\": \"Bakım\",\n  \"discountType\": \"percentage\",\n  \"discountValue\": 20,\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-01-31\",\n  \"visibilityDuration\": 30,\n  \"participantCount\": 0,\n  \"image\": \"https://example.com/campaign.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/campaigns",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "campaigns"]
+						}
+					}
+				},
+				{
+					"name": "Get Active Campaigns",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/campaigns/active",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "campaigns", "active"]
+						}
+					}
+				},
+				{
+					"name": "Get Company Campaigns",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/campaigns/company",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "campaigns", "company"]
+						}
+					}
+				},
+				{
+					"name": "Update Campaign",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"isActive\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/campaigns/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "campaigns", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Campaign",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/campaigns/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "campaigns", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Coupons",
+			"item": [
+				{
+					"name": "Create Coupon",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\",\n  \"code\": \"YENI2024\",\n  \"title\": \"Yeni Yıl Kuponu\",\n  \"description\": \"İlk siparişinizde %15 indirim\",\n  \"discountType\": \"percentage\",\n  \"discountValue\": 15,\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-01-31\",\n  \"usageLimit\": 100\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/coupons",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "coupons"]
+						}
+					}
+				},
+				{
+					"name": "Get Company Coupons",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/coupons/company",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "coupons", "company"]
+						}
+					}
+				},
+				{
+					"name": "Validate Coupon",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user-id",
+								"value": "{{userId}}",
+								"description": "User ID"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"YENI2024\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/coupons/validate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "coupons", "validate"]
+						}
+					}
+				},
+				{
+					"name": "Update Coupon",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"isActive\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/coupons/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "coupons", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Coupon",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/coupons/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "coupons", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Forms",
+			"item": [
+				{
+					"name": "Submit Form",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Ahmet\",\n  \"lastName\": \"Yılmaz\",\n  \"email\": \"ahmet@example.com\",\n  \"message\": \"Merhaba, size ulaşmak istiyorum.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/forms",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forms"]
+						}
+					}
+				},
+				{
+					"name": "Get All Forms",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/forms?isRead=false",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forms"],
+							"query": [
+								{
+									"key": "isRead",
+									"value": "false"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Form By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/forms/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forms", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Mark Form As Read",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/forms/:id/read",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forms", ":id", "read"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Mark All Forms As Read",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/forms/read-all",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forms", "read-all"]
+						}
+					}
+				},
+				{
+					"name": "Delete Form",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/forms/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "forms", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Products",
+			"item": [
+				{
+					"name": "Create Product",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\",\n  \"name\": \"Elektronik Ürün\",\n  \"description\": \"Yüksek kaliteli elektronik ürün\",\n  \"price\": 250.00,\n  \"category\": \"Elektronik\",\n  \"images\": [\n    \"https://example.com/product1.jpg\",\n    \"https://example.com/product2.jpg\"\n  ],\n  \"stock\": 50\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/products",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "products"]
+						}
+					}
+				},
+				{
+					"name": "Get All Products",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/products?category=Elektronik&minPrice=100&maxPrice=500",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "products"],
+							"query": [
+								{
+									"key": "category",
+									"value": "Elektronik"
+								},
+								{
+									"key": "minPrice",
+									"value": "100"
+								},
+								{
+									"key": "maxPrice",
+									"value": "500"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Filter Products",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"category\": [\"Elektronik\", \"Teknoloji\"],\n  \"minPrice\": 100,\n  \"maxPrice\": 1000,\n  \"minStock\": 1,\n  \"search\": \"telefon\",\n  \"sortBy\": \"price\",\n  \"sortOrder\": \"asc\",\n  \"page\": 1,\n  \"limit\": 20\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/products/filter",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "products", "filter"]
+						}
+					}
+				},
+				{
+					"name": "Get Company Products",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"507f1f77bcf86cd799439011\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/products/company",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "products", "company"]
+						}
+					}
+				},
+				{
+					"name": "Get Product By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/products/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "products", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Product",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"isPublished\": true,\n  \"stock\": 100\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/products/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "products", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Product",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/products/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "products", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439020"
+								}
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string",
+			"description": "JWT Token from login response"
+		}
+	]
+}
+
