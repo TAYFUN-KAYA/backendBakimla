@@ -1,0 +1,99 @@
+const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema(
+  {
+    firstName: {
+      type: String,
+      required: [true, 'Ad zorunludur'],
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      required: [true, 'Soyad zorunludur'],
+      trim: true,
+    },
+    gender: {
+      type: String,
+      enum: ['male', 'female', 'other'],
+      required: [true, 'Cinsiyet zorunludur'],
+    },
+    email: {
+      type: String,
+      required: [true, 'E-posta zorunludur'],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [/^\S+@\S+\.\S+$/, 'Geçerli bir e-posta adresi giriniz'],
+    },
+    phoneNumber: {
+      type: String,
+      required: [true, 'Telefon numarası zorunludur'],
+      unique: true,
+      trim: true,
+      match: [/^[0-9]{10,15}$/, 'Geçerli bir telefon numarası giriniz'],
+    },
+    username: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+    },
+    birthDate: {
+      type: Date,
+    },
+    profileImage: {
+      type: String,
+      trim: true,
+    },
+    city: {
+      type: String,
+      trim: true,
+    },
+    district: {
+      type: String,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: [true, 'Şifre zorunludur'],
+      minlength: [6, 'Şifre en az 6 karakter olmalıdır'],
+      select: false,
+    },
+    userType: {
+      type: String,
+      enum: ['company', 'employee', 'user'],
+      required: [true, 'Kullanıcı tipi zorunludur'],
+    },
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: function () {
+        return this.userType === 'employee';
+      },
+    },
+    isApproved: {
+      type: Boolean,
+      default: false,
+    },
+    activeStoreId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Store',
+    },
+    notificationPreferences: {
+      appointmentReminder: {
+        type: Boolean,
+        default: true,
+      },
+      campaignNotifications: {
+        type: Boolean,
+        default: true,
+      },
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+module.exports = mongoose.model('User', userSchema);
+
