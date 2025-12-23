@@ -1701,12 +1701,176 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "Payments",
+			"item": [
+				{
+					"name": "Initialize Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": \"6949f276127cd58f23c7d351\",\n  \"price\": 100.50,\n  \"currency\": \"TRY\",\n  \"installment\": 1,\n  \"cardInfo\": {\n    \"cardNumber\": \"5528790000000008\",\n    \"expireMonth\": \"12\",\n    \"expireYear\": \"2030\",\n    \"cvc\": \"123\",\n    \"cardHolderName\": \"Ahmet Yılmaz\"\n  },\n  \"buyerInfo\": {\n    \"name\": \"Ahmet\",\n    \"surname\": \"Yılmaz\",\n    \"email\": \"ahmet@test.com\",\n    \"phoneNumber\": \"+905551234567\",\n    \"identityNumber\": \"11111111111\",\n    \"city\": \"Istanbul\",\n    \"country\": \"Turkey\",\n    \"zipCode\": \"34000\",\n    \"address\": \"Test Mahallesi, Test Sokak No:1\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/initialize",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", "initialize"]
+						},
+						"description": "Yeni ödeme işlemi başlatır ve 3D Secure HTML içeriğini döndürür."
+					}
+				},
+				{
+					"name": "Get Payment Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/:paymentId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", ":paymentId"],
+							"variable": [
+								{
+									"key": "paymentId",
+									"value": "6949fb8febc8dc35bd2572f1",
+									"description": "Payment ID (MongoDB _id)"
+								}
+							]
+						},
+						"description": "Ödeme durumunu sorgular ve iyzico'dan güncel durumu alır."
+					}
+				},
+				{
+					"name": "Get Company Payments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/company/:companyId?status=success&page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", "company", ":companyId"],
+							"variable": [
+								{
+									"key": "companyId",
+									"value": "6949f276127cd58f23c7d351",
+									"description": "Company ID"
+								}
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "success",
+									"description": "Filter by status: pending, success, failed, cancelled",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "2025-12-01",
+									"description": "Start date (YYYY-MM-DD)",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "2025-12-31",
+									"description": "End date (YYYY-MM-DD)",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "20",
+									"description": "Items per page",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Şirkete ait ödemeleri listeler."
+					}
+				},
+				{
+					"name": "Cancel Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"description": "JWT Token"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/:paymentId/cancel",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", ":paymentId", "cancel"],
+							"variable": [
+								{
+									"key": "paymentId",
+									"value": "6949fb8febc8dc35bd2572f1",
+									"description": "Payment ID (MongoDB _id)"
+								}
+							]
+						},
+						"description": "Başarılı bir ödemeyi iptal eder."
+					}
+				},
+				{
+					"name": "Payment Callback (iyzico)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"28078844\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/callback",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", "callback"]
+						},
+						"description": "iyzico'dan gelen callback'i işler. Bu endpoint otomatik olarak çağrılır."
+					}
+				}
+			]
 		}
 	],
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://localhost:5000",
+			"value": "http://localhost:3001",
 			"type": "string"
 		},
 		{

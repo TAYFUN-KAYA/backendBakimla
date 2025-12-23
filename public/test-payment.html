@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iyzico 3D Secure Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .iframe-container {
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+            min-height: 600px;
+        }
+        iframe {
+            width: 100%;
+            min-height: 600px;
+            border: none;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>iyzico 3D Secure Test Sayfası</h1>
+        
+        <div class="info">
+            <strong>Kullanım:</strong><br>
+            1. Postman'den ödeme başlat (POST /api/payments/initialize)<br>
+            2. Response'dan <code>htmlContent</code> değerini kopyala<br>
+            3. Aşağıdaki textarea'ya yapıştır<br>
+            4. "3D Secure Formu Göster" butonuna tıkla
+        </div>
+
+        <div>
+            <label for="htmlContent"><strong>HTML Content (Base64):</strong></label><br>
+            <textarea id="htmlContent" rows="5" style="width: 100%; padding: 10px; font-family: monospace;" placeholder="Content HTML i buraya gir Tayfun abi"></textarea>
+        </div>
+
+        <button onclick="show3DSForm()">3D Secure Formu Göster</button>
+
+        <div id="status"></div>
+
+        <div class="iframe-container" id="iframeContainer" style="display: none;">
+            <iframe id="threeDSFrame" sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation"></iframe>
+        </div>
+    </div>
+
+    <script>
+        function show3DSForm() {
+            const htmlContent = document.getElementById('htmlContent').value.trim();
+            const statusDiv = document.getElementById('status');
+            const iframeContainer = document.getElementById('iframeContainer');
+            const iframe = document.getElementById('threeDSFrame');
+
+            if (!htmlContent) {
+                statusDiv.innerHTML = '<div class="status error">Lütfen HTML content girin!</div>';
+                return;
+            }
+
+            try {
+                const decodedHtml = atob(htmlContent);
+                
+                iframeContainer.style.display = 'block';
+                iframe.srcdoc = decodedHtml;
+                
+                statusDiv.innerHTML = '<div class="status success">3D Secure formu yüklendi. Form otomatik olarak submit edilecek...</div>';
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="status error">Hata: ' + error.message + '</div>';
+            }
+        }
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const htmlContent = urlParams.get('htmlContent');
+            if (htmlContent) {
+                document.getElementById('htmlContent').value = htmlContent;
+                show3DSForm();
+            }
+        };
+    </script>
+</body>
+</html>
+

@@ -21,7 +21,8 @@ router.post('/company/list', companyMiddleware, getCompanyStores);
 router.post('/company/active', companyMiddleware, setActiveStore);
 router.get('/my-info', companyMiddleware, getMyStoreInfo);
 router.get('/customers', companyMiddleware, getStoreCustomers);
-router.get('/company/:companyId/:storeId?', getStoreByCompanyId);
+router.get('/company/:companyId/:storeId', getStoreByCompanyId);
+router.get('/company/:companyId', getStoreByCompanyId);
 router.put('/company', companyMiddleware, updateStoreByCompanyId);
 router.put('/:id', companyMiddleware, updateStore);
 
