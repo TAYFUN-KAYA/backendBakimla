@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 
 const userSchema = new mongoose.Schema(
   {
@@ -94,6 +95,28 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Şifre hash'leme - sadece şifre değiştiğinde
+userSchema.pre('save', async function (next) {
+  // Şifre değişmemişse veya yeni bir kullanıcı değilse, hash'leme
+  if (!this.isModified('password')) {
+    return next();
+  }
+
+  try {
+    // Şifre zaten hash'lenmiş mi kontrol et (bcrypt hash'i $2a$, $2b$ veya $2y$ ile başlar)
+    if (this.password.startsWith('$2')) {
+      return next();
+    }
+
+    // Şifreyi hash'le
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = mongoose.model('User', userSchema);
 

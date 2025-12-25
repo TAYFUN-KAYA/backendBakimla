@@ -3,6 +3,10 @@ const Payment = require('../models/Payment');
 const User = require('../models/User');
 const Customer = require('../models/Customer');
 const Appointment = require('../models/Appointment');
+const { sendPaymentLink } = require('../utils/smsService');
+const { addToWallet } = require('./walletController');
+const { addPoints } = require('./pointsController');
+const { completeOrderPayment } = require('./orderController');
 
 /**
  * initializePayment
@@ -13,6 +17,7 @@ const initializePayment = async (req, res) => {
     const {
       companyId,
       appointmentId,
+      orderId,
       buyerId,
       price,
       currency = 'TRY',
@@ -21,15 +26,38 @@ const initializePayment = async (req, res) => {
     } = req.body;
 
     // Validasyon
-    if (!companyId || !price || price <= 0) {
+    if (!price || price <= 0) {
       return res.status(400).json({
         success: false,
-        message: 'companyId ve price (0\'dan büyük) zorunludur',
+        message: 'price (0\'dan büyük) zorunludur',
+      });
+    }
+
+    // Güvenlik: companyId'yi req.user'dan al (authMiddleware'den geliyor)
+    // Eğer kullanıcı company ise, sadece kendi companyId'sini kullanabilir
+    let finalCompanyId = companyId;
+    if (req.user) {
+      if (req.user.userType === 'company') {
+        // Şirket kullanıcısı sadece kendi ID'sini kullanabilir
+        finalCompanyId = req.user._id.toString();
+      } else if (req.user.userType === 'employee' && req.user.companyId) {
+        // Çalışan, bağlı olduğu şirketin ID'sini kullanabilir
+        finalCompanyId = req.user.companyId.toString();
+      } else if (!companyId) {
+        return res.status(400).json({
+          success: false,
+          message: 'companyId gereklidir',
+        });
+      }
+    } else if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: 'companyId gereklidir',
       });
     }
 
     // Şirket kontrolü
-    const company = await User.findById(companyId);
+    const company = await User.findById(finalCompanyId);
     if (!company || company.userType !== 'company') {
       return res.status(404).json({
         success: false,
@@ -41,7 +69,7 @@ const initializePayment = async (req, res) => {
     let customer = null;
     if (buyerId) {
       customer = await Customer.findById(buyerId);
-      if (!customer || customer.companyId.toString() !== companyId.toString()) {
+      if (!customer || customer.companyId.toString() !== finalCompanyId.toString()) {
         return res.status(404).json({
           success: false,
           message: 'Müşteri bulunamadı veya bu şirkete ait değil',
@@ -52,11 +80,34 @@ const initializePayment = async (req, res) => {
     // Randevu kontrolü
     if (appointmentId) {
       const appointment = await Appointment.findById(appointmentId);
-      if (!appointment || appointment.companyId.toString() !== companyId.toString()) {
+      if (!appointment || appointment.companyId.toString() !== finalCompanyId.toString()) {
         return res.status(404).json({
           success: false,
           message: 'Randevu bulunamadı veya bu şirkete ait değil',
         });
+      }
+    }
+
+    // Sipariş kontrolü
+    if (orderId) {
+      const Order = require('../models/Order');
+      const order = await Order.findById(orderId);
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: 'Sipariş bulunamadı',
+        });
+      }
+      // Order'dan companyId'yi al (ilk üründen)
+      if (order.items && order.items.length > 0) {
+        const Product = require('../models/Product');
+        const firstProduct = await Product.findById(order.items[0].productId);
+        if (firstProduct && firstProduct.companyId.toString() !== finalCompanyId.toString()) {
+          return res.status(400).json({
+            success: false,
+            message: 'Sipariş bu şirkete ait değil',
+          });
+        }
       }
     }
     const rawCardInfo = req.body.cardInfo || {
@@ -80,7 +131,7 @@ const initializePayment = async (req, res) => {
       paidPrice: price.toString(),
       currency: currency,
       installment: installment.toString(),
-      basketId: appointmentId ? appointmentId.toString() : `BASKET-${Date.now()}`,
+      basketId: appointmentId ? appointmentId.toString() : orderId ? orderId.toString() : `BASKET-${Date.now()}`,
       paymentChannel: 'WEB',
       paymentGroup: 'PRODUCT',
       callbackUrl: `${process.env.API_URL || 'http://localhost:3001'}/api/payments/callback`,
@@ -134,9 +185,9 @@ const initializePayment = async (req, res) => {
       },
       basketItems: [
         {
-          id: appointmentId ? appointmentId.toString() : 'ITEM-1',
-          name: 'Hizmet Ödemesi',
-          category1: 'Hizmet',
+          id: appointmentId ? appointmentId.toString() : orderId ? orderId.toString() : 'ITEM-1',
+          name: appointmentId ? 'Hizmet Ödemesi' : orderId ? 'Ürün Ödemesi' : 'Ödeme',
+          category1: appointmentId ? 'Hizmet' : orderId ? 'Ürün' : 'Genel',
           category2: 'Genel',
           itemType: 'PHYSICAL',
           price: price.toString(),
@@ -168,8 +219,9 @@ const initializePayment = async (req, res) => {
       if (result.status === 'failure') {
         // Ödeme kaydı oluştur (başarısız)
         const payment = await Payment.create({
-          companyId,
+          companyId: finalCompanyId,
           appointmentId: appointmentId || undefined,
+          orderId: orderId || undefined,
           buyerId: buyerId || undefined,
           price,
           currency,
@@ -191,8 +243,9 @@ const initializePayment = async (req, res) => {
 
       // Başarılı ise ödeme kaydı oluştur
       const payment = await Payment.create({
-        companyId,
+        companyId: finalCompanyId,
         appointmentId: appointmentId || undefined,
+        orderId: orderId || undefined,
         buyerId: buyerId || undefined,
         price,
         currency,
@@ -288,6 +341,56 @@ const paymentCallback = async (req, res) => {
           binNumber: result.binNumber,
           lastFourDigits: result.lastFourDigits,
         };
+
+        // Ödeme başarılı olduğunda işlemler
+        try {
+          // 1. Wallet'a para ekle (sadece online ödemeler için)
+          if (payment.companyId) {
+            const description = payment.appointmentId
+              ? 'Online ödeme - Randevu'
+              : payment.orderId
+              ? 'Online ödeme - Sipariş'
+              : 'Online ödeme';
+            
+            await addToWallet(
+              payment.companyId,
+              payment.price,
+              payment._id,
+              payment.appointmentId || payment.orderId,
+              description
+            );
+          }
+
+          // 2. Randevu varsa güncelle ve puan ekle
+          if (payment.appointmentId) {
+            const appointment = await Appointment.findById(payment.appointmentId);
+            if (appointment) {
+              appointment.paymentReceived = true;
+              appointment.status = 'approved';
+              appointment.isApproved = true;
+              await appointment.save();
+
+              // Randevu için puan ekle (kullanıcıya)
+              if (appointment.userId && appointment.totalPrice) {
+                await addPoints(
+                  appointment.userId.toString(),
+                  appointment.totalPrice,
+                  'appointment',
+                  appointment._id,
+                  'Randevu için puan kazandınız'
+                );
+              }
+            }
+          }
+
+          // 3. Sipariş varsa tamamla (içinde puan ekleme var)
+          if (payment.orderId) {
+            await completeOrderPayment(payment.orderId.toString(), payment._id);
+          }
+        } catch (error) {
+          console.error('Payment Success Callback Error:', error);
+          // Hata olsa bile ödeme başarılı sayılır
+        }
       } else if (result.paymentStatus === 'CALLBACK_THREEDS') {
         // 3D Secure işlemi devam ediyor, pending olarak bırak
         payment.paymentStatus = 'pending';
@@ -533,11 +636,66 @@ const cancelPayment = async (req, res) => {
   }
 };
 
+/**
+ * sendPaymentLinkViaSMS
+ * Ödeme linkini SMS ile gönder
+ */
+const sendPaymentLinkViaSMS = async (req, res) => {
+  try {
+    const { paymentId, phoneNumber } = req.body;
+
+    if (!paymentId || !phoneNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'paymentId ve phoneNumber zorunludur',
+      });
+    }
+
+    const payment = await Payment.findById(paymentId);
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ödeme kaydı bulunamadı',
+      });
+    }
+
+    // Ödeme linki oluştur (frontend URL + payment ID)
+    const paymentLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/${paymentId}`;
+
+    // SMS gönder
+    const smsResult = await sendPaymentLink(phoneNumber, paymentLink);
+
+    if (smsResult.success) {
+      res.status(200).json({
+        success: true,
+        message: 'Ödeme linki SMS ile gönderildi',
+        data: {
+          paymentLink,
+          smsResult,
+        },
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'SMS gönderilemedi',
+        error: smsResult.message,
+      });
+    }
+  } catch (error) {
+    console.error('Send Payment Link SMS Error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   initializePayment,
   paymentCallback,
   getPaymentStatus,
   getPayments,
   cancelPayment,
+  sendPaymentLinkViaSMS,
 };
 

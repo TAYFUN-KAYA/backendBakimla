@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const bcrypt = require('bcrypt');
 
 /**
  * getAllUsers
@@ -369,12 +370,22 @@ const updateNotificationPreferences = async (req, res) => {
  */
 const updatePassword = async (req, res) => {
   try {
-    const { userId, currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword } = req.body;
 
-    if (!userId || !currentPassword || !newPassword) {
+    if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: 'userId, currentPassword ve newPassword gereklidir',
+        message: 'currentPassword ve newPassword gereklidir',
+      });
+    }
+
+    // Kullanıcı ID'sini authMiddleware'den al (güvenlik için)
+    const userId = req.user?._id || req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Yetkilendirme hatası',
       });
     }
 
@@ -393,20 +404,39 @@ const updatePassword = async (req, res) => {
       });
     }
 
-    if (user.password !== currentPassword) {
+    // Mevcut şifre kontrolü - hem hash'lenmiş hem de eski düz metin şifreleri destekle
+    let isCurrentPasswordValid = false;
+    if (user.password.startsWith('$2')) {
+      // Hash'lenmiş şifre
+      isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    } else {
+      // Eski düz metin şifre (backward compatibility)
+      isCurrentPasswordValid = user.password === currentPassword;
+    }
+
+    if (!isCurrentPasswordValid) {
       return res.status(401).json({
         success: false,
         message: 'Mevcut şifre hatalı',
       });
     }
 
-    if (currentPassword === newPassword) {
+    // Yeni şifre mevcut şifre ile aynı mı kontrol et
+    let isSamePassword = false;
+    if (user.password.startsWith('$2')) {
+      isSamePassword = await bcrypt.compare(newPassword, user.password);
+    } else {
+      isSamePassword = currentPassword === newPassword;
+    }
+    
+    if (isSamePassword) {
       return res.status(400).json({
         success: false,
         message: 'Yeni şifre mevcut şifre ile aynı olamaz',
       });
     }
 
+    // Yeni şifreyi set et (pre-save hook otomatik hash'leyecek)
     user.password = newPassword;
     await user.save();
 

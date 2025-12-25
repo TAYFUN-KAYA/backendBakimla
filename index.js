@@ -15,6 +15,15 @@ const couponRoutes = require('./routes/couponRoutes');
 const formRoutes = require('./routes/formRoutes');
 const productRoutes = require('./routes/productRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const walletRoutes = require('./routes/walletRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const addressRoutes = require('./routes/addressRoutes');
+const pointsRoutes = require('./routes/pointsRoutes');
+const favoriteRoutes = require('./routes/favoriteRoutes');
+const cartRoutes = require('./routes/cartRoutes');
+const invoiceRoutes = require('./routes/invoiceRoutes');
+const paymentMethodRoutes = require('./routes/paymentMethodRoutes');
 
 connectDB();
 
@@ -39,6 +48,15 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/forms', formRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/addresses', addressRoutes);
+app.use('/api/points', pointsRoutes);
+app.use('/api/favorites', favoriteRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/invoices', invoiceRoutes);
+app.use('/api/payment-methods', paymentMethodRoutes);
 
 app.get('/', (req, res) => {
   res.json({

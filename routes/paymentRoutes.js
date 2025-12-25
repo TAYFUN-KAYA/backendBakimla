@@ -6,6 +6,7 @@ const {
   getPaymentStatus,
   getPayments,
   cancelPayment,
+  sendPaymentLinkViaSMS,
 } = require('../controllers/paymentController');
 const { authMiddleware } = require('../middleware/authMiddleware');
 
@@ -25,6 +26,9 @@ router.get('/:paymentId', authMiddleware, getPaymentStatus);
 
 // Ödeme iptal
 router.post('/:paymentId/cancel', authMiddleware, cancelPayment);
+
+// Ödeme linkini SMS ile gönder
+router.post('/send-link-sms', authMiddleware, sendPaymentLinkViaSMS);
 
 module.exports = router;
 
