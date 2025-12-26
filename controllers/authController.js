@@ -19,11 +19,28 @@ const sendOTPCode = async (req, res) => {
       });
     }
 
-    if (!['register', 'login'].includes(purpose)) {
+    if (!['register', 'login', 'admin-login'].includes(purpose)) {
       return res.status(400).json({
         success: false,
-        message: 'purpose "register" veya "login" olmalıdır',
+        message: 'purpose "register", "login" veya "admin-login" olmalıdır',
       });
+    }
+
+    // Admin login için telefon numarası kontrolü
+    if (purpose === 'admin-login') {
+      const user = await User.findOne({ phoneNumber });
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Kullanıcı bulunamadı',
+        });
+      }
+      if (user.userType !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Bu panele erişim için admin yetkisi gereklidir',
+        });
+      }
     }
 
     // Kayıt için telefon numarası kontrolü
@@ -122,10 +139,10 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    if (!['register', 'login'].includes(purpose)) {
+    if (!['register', 'login', 'admin-login'].includes(purpose)) {
       return res.status(400).json({
         success: false,
-        message: 'purpose "register" veya "login" olmalıdır',
+        message: 'purpose "register", "login" veya "admin-login" olmalıdır',
       });
     }
 
@@ -246,6 +263,36 @@ const verifyOTP = async (req, res) => {
       res.status(200).json({
         success: true,
         message: 'Giriş başarılı',
+        data: {
+          user: userResponse,
+          token,
+        },
+      });
+    } else if (purpose === 'admin-login') {
+      // Admin giriş işlemi
+      const user = await User.findOne({ phoneNumber });
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Kullanıcı bulunamadı',
+        });
+      }
+
+      if (user.userType !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Bu panele erişim için admin yetkisi gereklidir',
+        });
+      }
+
+      const token = generateToken(user._id);
+      const userResponse = user.toObject();
+      delete userResponse.password;
+
+      res.status(200).json({
+        success: true,
+        message: 'Admin girişi başarılı',
         data: {
           user: userResponse,
           token,

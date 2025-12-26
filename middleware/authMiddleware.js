@@ -142,7 +142,7 @@ const employeeMiddleware = async (req, res, next) => {
 
 /**
  * Admin Middleware
- * Token ile admin yetkisi kontrolü (ileride admin kullanıcı tipi eklenebilir)
+ * Token ile sadece admin kullanıcılarının erişebilmesini sağlar
  */
 const adminMiddleware = async (req, res, next) => {
   try {
@@ -163,6 +163,13 @@ const adminMiddleware = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: 'Geçersiz token',
+      });
+    }
+
+    if (user.userType !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Bu işlem için admin yetkisi gereklidir',
       });
     }
 

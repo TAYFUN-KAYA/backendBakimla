@@ -5,7 +5,7 @@ export const authService = {
     const response = await api.post('/auth/verify-otp', {
       phoneNumber,
       code,
-      purpose: 'login',
+      purpose: 'admin-login',
     });
     return response.data;
   },
@@ -13,7 +13,7 @@ export const authService = {
   sendOTP: async (phoneNumber) => {
     const response = await api.post('/auth/send-otp', {
       phoneNumber,
-      purpose: 'login',
+      purpose: 'admin-login',
     });
     return response.data;
   },

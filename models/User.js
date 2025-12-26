@@ -62,7 +62,7 @@ const userSchema = new mongoose.Schema(
     },
     userType: {
       type: String,
-      enum: ['company', 'employee', 'user'],
+      enum: ['company', 'employee', 'user', 'admin'],
       required: [true, 'Kullanıcı tipi zorunludur'],
     },
     companyId: {
