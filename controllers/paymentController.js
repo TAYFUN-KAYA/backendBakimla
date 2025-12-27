@@ -4,7 +4,7 @@ const User = require('../models/User');
 const Customer = require('../models/Customer');
 const Appointment = require('../models/Appointment');
 const { sendPaymentLink } = require('../utils/smsService');
-const { addToWallet } = require('./walletController');
+const { addToWallet, refundFromWallet } = require('./walletController');
 const { addPoints } = require('./pointsController');
 const { completeOrderPayment } = require('./orderController');
 
@@ -124,6 +124,20 @@ const initializePayment = async (req, res) => {
       cardNumber: rawCardInfo.cardNumber.replace(/\s/g, ''), // Boşlukları kaldır
     };
 
+    // İşletme taksit ayarlarını kontrol et
+    const Store = require('../models/Store');
+    const store = await Store.findOne({ companyId: finalCompanyId });
+    
+    let enabledInstallments = [2, 3, 6, 9, 12];
+    if (store && store.installmentSettings) {
+      if (!store.installmentSettings.enabled) {
+        enabledInstallments = [];
+      } else {
+        const max = store.installmentSettings.maxInstallment || 12;
+        enabledInstallments = enabledInstallments.filter(i => i <= max);
+      }
+    }
+
     const request = {
       locale: 'tr',
       conversationId: `CONV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -135,7 +149,7 @@ const initializePayment = async (req, res) => {
       paymentChannel: 'WEB',
       paymentGroup: 'PRODUCT',
       callbackUrl: `${process.env.API_URL || 'http://localhost:3001'}/api/payments/callback`,
-      enabledInstallments: [2, 3, 6, 9, 12],
+      enabledInstallments: enabledInstallments,
       paymentCard: {
         cardNumber: cardInfo.cardNumber,
         expireMonth: cardInfo.expireMonth,
@@ -690,6 +704,115 @@ const sendPaymentLinkViaSMS = async (req, res) => {
   }
 };
 
+/**
+ * refundPayment
+ * Ödeme iade eder
+ */
+const refundPayment = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const { amount, reason } = req.body;
+
+    const payment = await Payment.findById(paymentId);
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ödeme kaydı bulunamadı',
+      });
+    }
+
+    if (payment.paymentStatus !== 'success') {
+      return res.status(400).json({
+        success: false,
+        message: 'Sadece başarılı ödemeler iade edilebilir',
+      });
+    }
+
+    const iyzicoPaymentId = payment.paymentId || (payment.iyzicoResponse && payment.iyzicoResponse.paymentId);
+    // iyzico iadeler için paymentTransactionId (basket item ID) de gereklidir
+    const paymentTransactionId = payment.iyzicoResponse?.itemTransactions?.[0]?.paymentTransactionId;
+
+    if (!iyzicoPaymentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'iyzico Ödeme ID bulunamadı',
+      });
+    }
+
+    if (!paymentTransactionId && amount) {
+       // Kısmi iade için transactionId şarttır. 
+       // Ama biz yine de genel bir hata verelim eğer hiç yoksa.
+       console.warn('paymentTransactionId missing for refund');
+    }
+
+    // iyzico iade isteği
+    const request = {
+      locale: 'tr',
+      conversationId: `REF-${Date.now()}`,
+      paymentId: iyzicoPaymentId,
+      paymentTransactionId: paymentTransactionId, // Zorunlu alan
+      ip: req.ip || '127.0.0.1',
+      price: (amount || payment.price).toString(), // iade edilecek tutar
+      currency: payment.currency,
+    };
+
+    iyzipay.refund.create(request, async (err, result) => {
+      if (err) {
+        console.error('iyzico Refund Error:', err);
+        return res.status(400).json({
+          success: false,
+          message: 'İade işlemi başarısız',
+          error: err.message,
+        });
+      }
+
+      if (result.status === 'success') {
+        // Cüzdandan düş
+        if (payment.companyId) {
+          await refundFromWallet(
+            payment.companyId,
+            parseFloat(request.price),
+            payment._id,
+            payment.appointmentId || payment.orderId,
+            `İade - ${reason || 'Yönetici iadesi'}`
+          );
+        }
+
+        // Eğer tam iade ise durumu güncelle
+        if (!amount || parseFloat(amount) >= payment.price) {
+          payment.paymentStatus = 'refunded';
+        }
+        
+        // iyzico yanıtını sakla
+        payment.iyzicoResponse = {
+          ...payment.iyzicoResponse,
+          refundDetails: result
+        };
+        await payment.save();
+
+        res.status(200).json({
+          success: true,
+          message: 'İade işlemi başarıyla tamamlandı',
+          data: result,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.errorMessage || 'İade işlemi başarısız',
+          errorCode: result.errorCode,
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Refund Payment Error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   initializePayment,
   paymentCallback,
@@ -697,5 +820,6 @@ module.exports = {
   getPayments,
   cancelPayment,
   sendPaymentLinkViaSMS,
+  refundPayment,
 };
 

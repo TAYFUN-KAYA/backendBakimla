@@ -114,7 +114,13 @@ export default function Login() {
               </div>
               <p className="text-sm text-gray-500 mt-2">
                 {phoneNumber} numarasına gönderilen kodu girin
+                {import.meta.env.MODE === 'development' && (
+                  <span className="block text-primary-600 font-medium mt-1">
+                    Geliştirme Modu: Magic Number "123456" kullanabilirsiniz.
+                  </span>
+                )}
               </p>
+
             </div>
             <div className="flex gap-3">
               <button

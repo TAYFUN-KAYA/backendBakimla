@@ -10,12 +10,14 @@ export const adminService = {
   // Stores
   getAllStores: (params) => api.get('/admin/stores', { params }),
   getStoreDetails: (storeId) => api.get(`/admin/stores/${storeId}`),
+  updateStoreSettings: (storeId, data) => api.put(`/admin/stores/${storeId}/settings`, data),
 
   // Appointments
   getAllAppointments: (params) => api.get('/admin/appointments', { params }),
 
   // Payments
   getAllPayments: (params) => api.get('/admin/payments', { params }),
+  refundPayment: (paymentId, data) => api.post(`/admin/payments/${paymentId}/refund`, data),
 
   // Orders
   getAllOrders: (params) => api.get('/admin/orders', { params }),

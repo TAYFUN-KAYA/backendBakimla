@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '../services/adminService';
-import { CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { CreditCard, CheckCircle, XCircle, Clock, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'react-hot-toast';
 
 
 export default function Payments() {
@@ -35,12 +36,29 @@ export default function Payments() {
     }
   };
 
+  const handleRefund = async (paymentId) => {
+    if (!window.confirm('Bu ödemeyi iade etmek istediğinize emin misiniz?')) return;
+
+    try {
+      const response = await adminService.refundPayment(paymentId, { reason: 'Yönetici iadesi' });
+      if (response.data.success) {
+        toast.success('İade işlemi başarılı');
+        fetchPayments();
+      }
+    } catch (error) {
+      console.error('Refund error:', error);
+      toast.error(error.response?.data?.message || 'İade işlemi başarısız');
+    }
+  };
+
   const getStatusIcon = (status) => {
     switch (status) {
       case 'success':
         return <CheckCircle className="w-5 h-5 text-green-500" />;
       case 'failed':
         return <XCircle className="w-5 h-5 text-red-500" />;
+      case 'refunded':
+        return <RotateCcw className="w-5 h-5 text-blue-500" />;
       case 'pending':
         return <Clock className="w-5 h-5 text-yellow-500" />;
       default:
@@ -72,6 +90,7 @@ export default function Payments() {
           <option value="pending">Beklemede</option>
           <option value="failed">Başarısız</option>
           <option value="cancelled">İptal</option>
+          <option value="refunded">İade Edildi</option>
         </select>
       </div>
 
@@ -88,9 +107,11 @@ export default function Payments() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İşletme</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tutar</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Taksit</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kart</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tip</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">İşlemler</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -133,6 +154,27 @@ export default function Payments() {
                         )}
                         {payment.orderId && (
                           <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Sipariş</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium">
+                        {payment.installment > 1 ? (
+                          <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full text-xs">
+                            {payment.installment} Taksit
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs font-normal italic">Yok</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {payment.paymentStatus === 'success' && (
+                          <button
+                            onClick={() => handleRefund(payment._id)}
+                            className="text-blue-600 hover:text-blue-900 text-sm font-medium flex items-center justify-end ml-auto"
+                            title="İade Et"
+                          >
+                            <RotateCcw className="w-4 h-4 mr-1" />
+                            İade Et
+                          </button>
                         )}
                       </td>
                     </tr>

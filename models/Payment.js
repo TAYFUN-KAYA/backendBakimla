@@ -35,7 +35,7 @@ const paymentSchema = new mongoose.Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ['pending', 'success', 'failed', 'cancelled'],
+      enum: ['pending', 'success', 'failed', 'cancelled', 'refunded'],
       default: 'pending',
     },
     // iyzico response bilgileri

@@ -19,7 +19,7 @@ const otpSchema = new mongoose.Schema(
     },
     purpose: {
       type: String,
-      enum: ['register', 'login', 'forgot_password'],
+      enum: ['register', 'login', 'forgot_password', 'admin-login'],
       required: [true, 'OTP amacı zorunludur'],
     },
     isUsed: {
