@@ -18,8 +18,10 @@ const {
   getAllProducts,
   getAllReviews,
   toggleReviewPublish,
+  updateStoreSettings,
 } = require('../controllers/adminController');
 const { adminMiddleware } = require('../middleware/authMiddleware');
+const paymentController = require('../controllers/paymentController');
 
 // Dashboard
 router.get('/dashboard', adminMiddleware, getDashboardStats);
@@ -30,12 +32,14 @@ router.get('/users', adminMiddleware, getAllUsers);
 // Stores
 router.get('/stores', adminMiddleware, getAllStores);
 router.get('/stores/:storeId', adminMiddleware, getStoreDetails);
+router.put('/stores/:storeId/settings', adminMiddleware, updateStoreSettings);
 
 // Appointments
 router.get('/appointments', adminMiddleware, getAllAppointments);
 
 // Payments
 router.get('/payments', adminMiddleware, getAllPayments);
+router.post('/payments/:paymentId/refund', adminMiddleware, paymentController.refundPayment);
 
 // Orders
 router.get('/orders', adminMiddleware, getAllOrders);

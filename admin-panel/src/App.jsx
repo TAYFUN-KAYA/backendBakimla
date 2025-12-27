@@ -14,6 +14,7 @@ import Employees from './pages/Employees';
 import StoreDetail from './pages/StoreDetail';
 import Layout from './layouts/Layout';
 import { authService } from './services/authService';
+import { Toaster } from 'react-hot-toast';
 
 function PrivateRoute({ children }) {
   const isAuthenticated = authService.isAuthenticated();
@@ -23,6 +24,7 @@ function PrivateRoute({ children }) {
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route

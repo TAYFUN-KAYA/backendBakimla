@@ -12,9 +12,11 @@ import {
   ArrowLeft,
   CheckCircle,
   Clock,
-  UserCheck
+  UserCheck,
+  Settings
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'react-hot-toast';
 
 export default function StoreDetail() {
   const { storeId } = useParams();
@@ -56,7 +58,21 @@ export default function StoreDetail() {
     { id: 'employees', label: 'Çalışanlar' },
     { id: 'appointments', label: 'Randevular' },
     { id: 'payments', label: 'Ödemeler' },
+    { id: 'settings', label: 'Ayarlar' },
   ];
+
+  const handleUpdateSettings = async (settings) => {
+    try {
+      const response = await adminService.updateStoreSettings(storeId, { installmentSettings: settings });
+      if (response.data.success) {
+        toast.success('Ayarlar güncellendi');
+        fetchStoreDetails();
+      }
+    } catch (error) {
+      console.error('Settings update error:', error);
+      toast.error('Ayarlar güncellenemedi');
+    }
+  };
 
   return (
     <div>
@@ -372,6 +388,66 @@ export default function StoreDetail() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* Settings Tab */}
+          {activeTab === 'settings' && (
+            <div className="max-w-2xl">
+              <h3 className="text-lg font-semibold mb-6">İşletme Ayarları</h3>
+              
+              <div className="bg-gray-50 rounded-lg p-6 space-y-6">
+                <div>
+                  <h4 className="font-medium text-gray-800 mb-4 flex items-center">
+                    <CreditCard className="w-5 h-5 mr-2 text-primary-600" />
+                    Taksit Ayarları
+                  </h4>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-white rounded-lg border">
+                      <div>
+                        <p className="font-medium">Taksitli Ödeme</p>
+                        <p className="text-sm text-gray-500">Müşterilerin taksitli ödeme yapabilmesini sağla</p>
+                      </div>
+                      <button
+                        onClick={() => handleUpdateSettings({ enabled: !store.installmentSettings?.enabled })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                          store.installmentSettings?.enabled ? 'bg-primary-600' : 'bg-gray-200'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            store.installmentSettings?.enabled ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {store.installmentSettings?.enabled && (
+                      <div className="p-4 bg-white rounded-lg border">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Maksimum Taksit Sayısı
+                        </label>
+                        <select
+                          value={store.installmentSettings?.maxInstallment || 12}
+                          onChange={(e) => handleUpdateSettings({ maxInstallment: parseInt(e.target.value) })}
+                          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                        >
+                          <option value={1}>Taksit Yok (Peşin)</option>
+                          <option value={2}>2 Taksit</option>
+                          <option value={3}>3 Taksit</option>
+                          <option value={6}>6 Taksit</option>
+                          <option value={9}>9 Taksit</option>
+                          <option value={12}>12 Taksit</option>
+                        </select>
+                        <p className="mt-2 text-xs text-gray-500">
+                          iyzico üzerinden sunulacak maksimum taksit sayısını belirler.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}

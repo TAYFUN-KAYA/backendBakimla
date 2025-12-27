@@ -53,7 +53,7 @@ Content-Type: application/json
   "currency": "TRY", // Opsiyonel, default: "TRY"
   "installment": 1, // Opsiyonel, default: 1
   "buyerInfo": { // buyerId yoksa kullanılabilir
-    "name": "Ahmet",
+    "name": "Ahmet",  
     "surname": "Yılmaz",
     "email": "ahmet@example.com",
     "phoneNumber": "+905551234567",

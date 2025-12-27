@@ -238,11 +238,52 @@ const addToWallet = async (companyId, amount, paymentId, appointmentId, descript
   }
 };
 
+/**
+ * refundFromWallet
+ * Ödeme iade edildiğinde cüzdandan düş (internal use)
+ */
+const refundFromWallet = async (companyId, amount, paymentId, appointmentId, description) => {
+  try {
+    const wallet = await Wallet.findOne({ companyId });
+
+    if (!wallet) {
+      return { success: false, error: 'Cüzdan bulunamadı' };
+    }
+
+    const balanceBefore = wallet.balance;
+    wallet.balance -= amount;
+    // Toplam kazançtan da düşüyoruz çünkü bu bir iade
+    wallet.totalEarnings -= amount;
+    wallet.lastTransactionDate = new Date();
+    await wallet.save();
+
+    // İşlem kaydı oluştur
+    await WalletTransaction.create({
+      walletId: wallet._id,
+      companyId,
+      type: 'refund',
+      amount,
+      balanceBefore,
+      balanceAfter: wallet.balance,
+      description: description || 'Ödeme iadesi',
+      paymentId,
+      appointmentId,
+      status: 'completed',
+    });
+
+    return { success: true, wallet };
+  } catch (error) {
+    console.error('Refund from Wallet Error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
   getWallet,
   getWalletTransactions,
   createWithdrawalRequest,
   getWithdrawalRequests,
   addToWallet, // Internal function
+  refundFromWallet, // Internal function
 };
 

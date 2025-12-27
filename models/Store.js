@@ -148,6 +148,17 @@ const storeSchema = new mongoose.Schema(
         trim: true,
       },
     },
+    installmentSettings: {
+      enabled: {
+        type: Boolean,
+        default: true,
+      },
+      maxInstallment: {
+        type: Number,
+        default: 12,
+        enum: [1, 2, 3, 6, 9, 12],
+      },
+    },
   },
   {
     timestamps: true,

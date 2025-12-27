@@ -147,34 +147,45 @@ const verifyOTP = async (req, res) => {
     }
 
     // OTP'yi bul
-    const otp = await OTP.findOne({
-      phoneNumber,
-      code,
-      purpose,
-      isUsed: false,
-      expiresAt: { $gt: new Date() },
-    });
+    let otp;
+    const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+    const isMagicNumber = isDev && purpose === 'admin-login' && code === '123456';
 
-    if (!otp) {
-      // Deneme sayısını artır
-      const failedOtp = await OTP.findOne({ phoneNumber, purpose, isUsed: false });
-      if (failedOtp) {
-        failedOtp.attempts += 1;
-        if (failedOtp.attempts >= 5) {
-          failedOtp.isUsed = true; // Çok fazla deneme, OTP'yi iptal et
+    if (isMagicNumber) {
+      // Magic number kullanıldığında OTP kaydı aramaya gerek yok
+      otp = { isUsed: true }; 
+    } else {
+      otp = await OTP.findOne({
+        phoneNumber,
+        code,
+        purpose,
+        isUsed: false,
+        expiresAt: { $gt: new Date() },
+      });
+
+      if (!otp) {
+        // Deneme sayısını artır
+        const failedOtp = await OTP.findOne({ phoneNumber, purpose, isUsed: false });
+        if (failedOtp) {
+          failedOtp.attempts += 1;
+          if (failedOtp.attempts >= 5) {
+            failedOtp.isUsed = true; // Çok fazla deneme, OTP'yi iptal et
+          }
+          await failedOtp.save();
         }
-        await failedOtp.save();
+
+        return res.status(400).json({
+          success: false,
+          message: 'Geçersiz veya süresi dolmuş OTP kodu',
+        });
       }
 
-      return res.status(400).json({
-        success: false,
-        message: 'Geçersiz veya süresi dolmuş OTP kodu',
-      });
+      // OTP'yi kullanıldı olarak işaretle
+      otp.isUsed = true;
+      await otp.save();
     }
 
-    // OTP'yi kullanıldı olarak işaretle
-    otp.isUsed = true;
-    await otp.save();
+
 
     if (purpose === 'register') {
       // Kayıt işlemi

@@ -830,6 +830,46 @@ const toggleReviewPublish = async (req, res) => {
   }
 };
 
+/**
+ * updateStoreSettings
+ * İşletme ayarlarını günceller (taksit vb.)
+ */
+const updateStoreSettings = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const { installmentSettings } = req.body;
+
+    const store = await Store.findById(storeId);
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'İşletme bulunamadı',
+      });
+    }
+
+    if (installmentSettings) {
+      store.installmentSettings = {
+        ...store.installmentSettings,
+        ...installmentSettings
+      };
+    }
+
+    await store.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'İşletme ayarları güncellendi',
+      data: store,
+    });
+  } catch (error) {
+    console.error('Update Store Settings Error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   getPendingEmployees,
   approveEmployee,
@@ -848,5 +888,6 @@ module.exports = {
   getAllProducts,
   getAllReviews,
   toggleReviewPublish,
+  updateStoreSettings,
 };
 
