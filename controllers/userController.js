@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const bcrypt = require('bcrypt');
 
@@ -30,16 +31,19 @@ const getAllUsers = async (req, res) => {
  */
 const getAllEmployees = async (req, res) => {
   try {
-    const { companyId } = req.query;
+    const { companyId, showAll } = req.query;
 
-    const query = { userType: 'employee', isApproved: true };
+    const query = { userType: 'employee' };
+    if (showAll !== 'true') {
+      query.isApproved = true;
+    }
 
     if (companyId) {
       query.companyId = companyId;
     }
 
     const employees = await User.find(query)
-      .select('firstName lastName email phoneNumber birthDate profileImage city district companyId')
+      .select('firstName lastName email phoneNumber birthDate profileImage city district companyId isApproved bio expertiseDocuments workExamples')
       .populate('companyId', 'firstName lastName businessName')
       .sort({ createdAt: -1 });
 
@@ -253,13 +257,16 @@ const updateProfile = async (req, res) => {
     if (phoneNumber) updateData.phoneNumber = phoneNumber;
     if (birthDate) updateData.birthDate = new Date(birthDate);
     if (profileImage !== undefined) updateData.profileImage = profileImage;
+    if (req.body.bio !== undefined) updateData.bio = req.body.bio;
+    if (req.body.expertiseDocuments !== undefined) updateData.expertiseDocuments = req.body.expertiseDocuments;
+    if (req.body.workExamples !== undefined) updateData.workExamples = req.body.workExamples;
     if (req.body.notificationPreferences) {
       updateData.notificationPreferences = {
-        appointmentReminder: req.body.notificationPreferences.appointmentReminder !== undefined 
-          ? req.body.notificationPreferences.appointmentReminder 
+        appointmentReminder: req.body.notificationPreferences.appointmentReminder !== undefined
+          ? req.body.notificationPreferences.appointmentReminder
           : user.notificationPreferences?.appointmentReminder ?? true,
-        campaignNotifications: req.body.notificationPreferences.campaignNotifications !== undefined 
-          ? req.body.notificationPreferences.campaignNotifications 
+        campaignNotifications: req.body.notificationPreferences.campaignNotifications !== undefined
+          ? req.body.notificationPreferences.campaignNotifications
           : user.notificationPreferences?.campaignNotifications ?? true,
       };
     }
@@ -337,11 +344,11 @@ const updateNotificationPreferences = async (req, res) => {
 
     const updateData = {
       notificationPreferences: {
-        appointmentReminder: appointmentReminder !== undefined 
-          ? appointmentReminder 
+        appointmentReminder: appointmentReminder !== undefined
+          ? appointmentReminder
           : (user.notificationPreferences?.appointmentReminder ?? true),
-        campaignNotifications: campaignNotifications !== undefined 
-          ? campaignNotifications 
+        campaignNotifications: campaignNotifications !== undefined
+          ? campaignNotifications
           : (user.notificationPreferences?.campaignNotifications ?? true),
       },
     };
@@ -381,7 +388,7 @@ const updatePassword = async (req, res) => {
 
     // Kullanıcı ID'sini authMiddleware'den al (güvenlik için)
     const userId = req.user?._id || req.user?.id;
-    
+
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -428,7 +435,7 @@ const updatePassword = async (req, res) => {
     } else {
       isSamePassword = currentPassword === newPassword;
     }
-    
+
     if (isSamePassword) {
       return res.status(400).json({
         success: false,
@@ -458,7 +465,7 @@ const updatePassword = async (req, res) => {
  */
 const createEmployee = async (req, res) => {
   try {
-    const { companyId, firstName, lastName, birthDate, phoneNumber, profileImage, city, district } = req.body;
+    const { companyId, firstName, lastName, birthDate, phoneNumber, profileImage, city, district, bio, expertiseDocuments, workExamples } = req.body;
 
     if (!companyId || !firstName || !lastName || !phoneNumber) {
       return res.status(400).json({
@@ -493,7 +500,7 @@ const createEmployee = async (req, res) => {
 
     const defaultPassword = phoneNumber.slice(-6);
     let defaultEmail = `${phoneNumber}@bakimla.local`;
-    
+
     let emailExists = await User.findOne({ email: defaultEmail });
     let counter = 1;
     while (emailExists) {
@@ -512,6 +519,9 @@ const createEmployee = async (req, res) => {
       profileImage,
       city,
       district,
+      bio,
+      expertiseDocuments,
+      workExamples,
       password: defaultPassword,
       userType: 'employee',
       companyId,
@@ -559,6 +569,48 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const Appointment = require('../models/Appointment');
+const Review = require('../models/Review');
+const Accounting = require('../models/Accounting');
+
+/**
+ * getEmployeeStats
+ * Çalışan istatistiklerini getirir (randevu sayısı, puan, kazanç)
+ */
+const getEmployeeStats = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const processCount = await Appointment.countDocuments({ employeeId: id, status: 'completed' });
+
+    const reviews = await Review.find({ employeeId: id, reviewType: 'employee' });
+    const averageRating = reviews.length > 0
+      ? reviews.reduce((acc, curr) => acc + curr.rating, 0) / reviews.length
+      : 0;
+
+    const earnings = await Accounting.aggregate([
+      { $match: { employeeId: new mongoose.Types.ObjectId(id) } },
+      { $group: { _id: null, total: { $sum: "$income" } } }
+    ]);
+    const totalEarnings = earnings.length > 0 ? earnings[0].total : 0;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        processCount,
+        averageRating: parseFloat(averageRating.toFixed(1)),
+        totalEarnings,
+        reviewCount: reviews.length
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getAllEmployees,
@@ -571,5 +623,6 @@ module.exports = {
   updateNotificationPreferences,
   updatePassword,
   deleteUser,
+  getEmployeeStats,
 };
 

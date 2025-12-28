@@ -19,10 +19,10 @@ const sendOTPCode = async (req, res) => {
       });
     }
 
-    if (!['register', 'login', 'admin-login'].includes(purpose)) {
+    if (!['register', 'login', 'admin-login', 'reset-password'].includes(purpose)) {
       return res.status(400).json({
         success: false,
-        message: 'purpose "register", "login" veya "admin-login" olmalıdır',
+        message: 'purpose "register", "login", "admin-login" veya "reset-password" olmalıdır',
       });
     }
 
@@ -54,8 +54,8 @@ const sendOTPCode = async (req, res) => {
       }
     }
 
-    // Giriş için kullanıcı kontrolü
-    if (purpose === 'login') {
+    // Giriş veya şifre sıfırlama için kullanıcı kontrolü
+    if (purpose === 'login' || purpose === 'reset-password') {
       const user = await User.findOne({ phoneNumber });
       if (!user) {
         return res.status(404).json({
@@ -93,6 +93,7 @@ const sendOTPCode = async (req, res) => {
     });
 
     // SMS gönder
+    /* NetGSM devre dışı
     const smsResult = await sendOTP(phoneNumber, code);
 
     if (smsResult.success) {
@@ -115,6 +116,18 @@ const sendOTPCode = async (req, res) => {
         smsError: smsResult.message,
       });
     }
+    */
+
+    console.log(`OTP Code for ${phoneNumber}: ${code}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'OTP kodu oluşturuldu (SMS Devre Dışı)',
+      data: {
+        code: code,
+        expiresIn: 600,
+      },
+    });
   } catch (error) {
     console.error('Send OTP Error:', error);
     res.status(500).json({
@@ -139,10 +152,10 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    if (!['register', 'login', 'admin-login'].includes(purpose)) {
+    if (!['register', 'login', 'admin-login', 'reset-password'].includes(purpose)) {
       return res.status(400).json({
         success: false,
-        message: 'purpose "register", "login" veya "admin-login" olmalıdır',
+        message: 'purpose "register", "login", "admin-login" veya "reset-password" olmalıdır',
       });
     }
 
@@ -153,7 +166,7 @@ const verifyOTP = async (req, res) => {
 
     if (isMagicNumber) {
       // Magic number kullanıldığında OTP kaydı aramaya gerek yok
-      otp = { isUsed: true }; 
+      otp = { isUsed: true };
     } else {
       otp = await OTP.findOne({
         phoneNumber,
@@ -188,13 +201,13 @@ const verifyOTP = async (req, res) => {
 
 
     if (purpose === 'register') {
-      // Kayıt işlemi
-      const { firstName, lastName, gender, email, password, userType, companyId } = userData || {};
+      // Kayıt işlemi (şifresiz)
+      const { firstName, lastName, gender, email, userType, companyId } = userData || {};
 
-      if (!firstName || !lastName || !gender || !email || !password || !userType) {
+      if (!firstName || !lastName || !gender || !email || !userType) {
         return res.status(400).json({
           success: false,
-          message: 'Kayıt için tüm kullanıcı bilgileri gereklidir',
+          message: 'Kayıt için ad, soyad, cinsiyet, email ve kullanıcı tipi gereklidir',
         });
       }
 
@@ -232,9 +245,9 @@ const verifyOTP = async (req, res) => {
         gender,
         email,
         phoneNumber,
-        password,
         userType,
         companyId: userType === 'employee' ? companyId : undefined,
+        // No password field - passwordless authentication
       });
 
       const token = generateToken(user._id);
@@ -308,6 +321,35 @@ const verifyOTP = async (req, res) => {
           user: userResponse,
           token,
         },
+      });
+    }
+    else if (purpose === 'reset-password') {
+      // Şifre sıfırlama işlemi
+      const { password } = userData || {};
+
+      if (!password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Yeni şifre gereklidir',
+        });
+      }
+
+      const user = await User.findOne({ phoneNumber });
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Kullanıcı bulunamadı',
+        });
+      }
+
+      // Şifreyi güncelle (User modelinde hash'lenecek)
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+      await user.save();
+
+      res.status(200).json({
+        success: true,
+        message: 'Şifreniz başarıyla güncellendi',
       });
     }
   } catch (error) {

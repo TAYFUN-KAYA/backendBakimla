@@ -9,6 +9,7 @@ const {
   getAppointmentSummary,
   updateAppointment,
   deleteAppointment,
+  getBusyDates,
 } = require('../controllers/appointmentController');
 const { companyMiddleware, employeeMiddleware, authMiddleware } = require('../middleware/authMiddleware');
 
@@ -22,6 +23,7 @@ router.post('/client', authMiddleware, createAppointmentFromClient);
 router.get('/client/list', authMiddleware, getClientAppointments);
 
 router.get('/:id/summary', authMiddleware, getAppointmentSummary);
+router.get('/busy-dates', companyMiddleware, getBusyDates);
 router.post('/company', companyMiddleware, getCompanyAppointments);
 router.post('/employee', employeeMiddleware, getEmployeeAppointments);
 router.put('/:id', companyMiddleware, updateAppointment);

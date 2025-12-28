@@ -408,7 +408,7 @@ const getAllStores = async (req, res) => {
  */
 const getMyStoreInfo = async (req, res) => {
   try {
-    const { companyId } = req.body;
+    const companyId = req.body.companyId || req.companyId;
 
     if (!companyId) {
       return res.status(400).json({
@@ -466,7 +466,7 @@ const getMyStoreInfo = async (req, res) => {
  */
 const getStoreCustomers = async (req, res) => {
   try {
-    const { companyId } = req.body;
+    const companyId = req.body.companyId || req.companyId;
 
     if (!companyId) {
       return res.status(400).json({
@@ -521,6 +521,58 @@ const getStoreCustomers = async (req, res) => {
   }
 };
 
+/**
+ * createCustomer
+ * İşletmeye yeni müşteri ekler
+ */
+const createCustomer = async (req, res) => {
+  try {
+    const companyId = req.body.companyId || req.companyId;
+    const { firstName, lastName, phoneNumber, notes } = req.body;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: 'companyId gereklidir',
+      });
+    }
+
+    if (!firstName || !lastName || !phoneNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ad, soyad ve telefon numarası zorunludur',
+      });
+    }
+
+    // Telefon numarası temizleme (isteğe bağlı, modele göre çakışma kontrolü)
+    const existingCustomer = await Customer.findOne({ companyId, phoneNumber });
+    if (existingCustomer) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bu telefon numarası ile kayıtlı bir müşteri zaten var',
+      });
+    }
+
+    const newCustomer = await Customer.create({
+      companyId,
+      firstName,
+      lastName,
+      phoneNumber,
+      notes,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: newCustomer,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createStore,
   getCompanyStores,
@@ -532,5 +584,6 @@ module.exports = {
   getAllStores,
   getMyStoreInfo,
   getStoreCustomers,
+  createCustomer,
 };
 
