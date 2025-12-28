@@ -12,6 +12,7 @@ const {
   updateNotificationPreferences,
   updatePassword,
   deleteUser,
+  getEmployeeStats,
 } = require('../controllers/userController');
 const { authMiddleware, companyMiddleware } = require('../middleware/authMiddleware');
 
@@ -25,6 +26,7 @@ router.put('/notification-preferences', authMiddleware, updateNotificationPrefer
 router.put('/password', authMiddleware, updatePassword);
 router.put('/:id/userType', authMiddleware, updateUserType);
 router.put('/:id', authMiddleware, updateUser);
+router.get('/:id/stats', companyMiddleware, getEmployeeStats);
 router.delete('/:id', authMiddleware, deleteUser);
 
 module.exports = router;

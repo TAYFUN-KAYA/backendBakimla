@@ -273,6 +273,8 @@ const getEmployeeAppointments = async (req, res) => {
   }
 };
 
+const { processRewardOnCompletion } = require('./rewardController');
+
 /**
  * updateAppointment
  * Randevu bilgilerini günceller
@@ -280,6 +282,7 @@ const getEmployeeAppointments = async (req, res) => {
 const updateAppointment = async (req, res) => {
   try {
     const { id } = req.params;
+    const { status } = req.body;
 
     const appointment = await Appointment.findByIdAndUpdate(id, req.body, {
       new: true,
@@ -294,6 +297,11 @@ const updateAppointment = async (req, res) => {
         success: false,
         message: 'Randevu bulunamadı',
       });
+    }
+
+    // Eğer randevu tamamlandıysa ödüllü puanlama sistemini çalıştır
+    if (status === 'completed') {
+      await processRewardOnCompletion(id);
     }
 
     res.status(200).json({
@@ -662,6 +670,42 @@ const getClientAppointments = async (req, res) => {
   }
 };
 
+/**
+ * getBusyDates
+ * Şirketin randevusu olan günleri getirir
+ */
+const getBusyDates = async (req, res) => {
+  try {
+    const companyId = req.companyId || req.user._id;
+    const { month, year } = req.query;
+
+    const query = { companyId, status: { $in: ['pending', 'approved', 'completed'] } };
+
+    if (month && year) {
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+      query.appointmentDate = { $gte: startDate, $lte: endDate };
+    }
+
+    const appointments = await Appointment.find(query, 'appointmentDate');
+
+    // Tarihleri YYYY-MM-DD formatında set yapalım (tekil olsunlar)
+    const busyDates = [...new Set(appointments.map(a =>
+      a.appointmentDate.toISOString().split('T')[0]
+    ))];
+
+    res.status(200).json({
+      success: true,
+      data: busyDates,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createAppointment,
   createAppointmentFromClient,
@@ -671,5 +715,6 @@ module.exports = {
   getAppointmentSummary,
   updateAppointment,
   deleteAppointment,
+  getBusyDates,
 };
 

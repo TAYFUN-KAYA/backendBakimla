@@ -11,6 +11,7 @@ const {
   getAllStores,
   getMyStoreInfo,
   getStoreCustomers,
+  createCustomer,
 } = require('../controllers/storeController');
 const { companyMiddleware, authMiddleware } = require('../middleware/authMiddleware');
 
@@ -21,6 +22,7 @@ router.post('/company/list', companyMiddleware, getCompanyStores);
 router.post('/company/active', companyMiddleware, setActiveStore);
 router.get('/my-info', companyMiddleware, getMyStoreInfo);
 router.get('/customers', companyMiddleware, getStoreCustomers);
+router.post('/customers', companyMiddleware, createCustomer);
 router.get('/company/:companyId/:storeId', getStoreByCompanyId);
 router.get('/company/:companyId', getStoreByCompanyId);
 router.put('/company', companyMiddleware, updateStoreByCompanyId);

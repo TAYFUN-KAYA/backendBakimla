@@ -24,6 +24,8 @@ const favoriteRoutes = require('./routes/favoriteRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const paymentMethodRoutes = require('./routes/paymentMethodRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
+const serviceRoutes = require('./routes/serviceRoutes');
 
 connectDB();
 
@@ -42,6 +44,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/accounting', accountingRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/rewards', require('./routes/rewardRoutes'));
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/coupons', couponRoutes);
@@ -57,6 +60,8 @@ app.use('/api/favorites', favoriteRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/payment-methods', paymentMethodRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/services', serviceRoutes);
 
 app.get('/', (req, res) => {
   res.json({

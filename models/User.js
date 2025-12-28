@@ -56,7 +56,7 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Şifre zorunludur'],
+      required: false, // Password is now optional for OTP-based auth
       minlength: [6, 'Şifre en az 6 karakter olmalıdır'],
       select: false,
     },
@@ -90,6 +90,23 @@ const userSchema = new mongoose.Schema(
         default: true,
       },
     },
+    bio: {
+      type: String,
+      trim: true,
+    },
+    expertiseDocuments: {
+      type: [String],
+      default: [],
+    },
+    workExamples: [
+      {
+        type: {
+          type: String,
+          enum: ['öncesi', 'sonrası'],
+        },
+        url: String,
+      },
+    ],
   },
   {
     timestamps: true,
