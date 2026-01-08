@@ -22,6 +22,10 @@ const campaignSchema = new mongoose.Schema(
       required: [true, 'Hizmet kategorisi zorunludur'],
       trim: true,
     },
+    servicesId: {
+      type: String,
+      trim: true,
+    },
     discountType: {
       type: String,
       enum: ['percentage', 'amount'],

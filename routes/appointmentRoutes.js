@@ -9,6 +9,7 @@ const {
   getAppointmentSummary,
   updateAppointment,
   deleteAppointment,
+  cancelAppointment,
   getBusyDates,
 } = require('../controllers/appointmentController');
 const { companyMiddleware, employeeMiddleware, authMiddleware } = require('../middleware/authMiddleware');
@@ -22,11 +23,13 @@ router.post('/client', authMiddleware, createAppointmentFromClient);
 // Client app randevularını getir
 router.get('/client/list', authMiddleware, getClientAppointments);
 
+// Spesifik route'lar parametrik route'lardan ÖNCE olmalı
+router.get('/busy-dates', authMiddleware, getBusyDates); // companyMiddleware → authMiddleware
+router.get('/company', authMiddleware, getCompanyAppointments); // GET isteği, query parametreleri ile
 router.get('/:id/summary', authMiddleware, getAppointmentSummary);
-router.get('/busy-dates', companyMiddleware, getBusyDates);
-router.post('/company', companyMiddleware, getCompanyAppointments);
-router.post('/employee', employeeMiddleware, getEmployeeAppointments);
+router.post('/employee', authMiddleware, getEmployeeAppointments); // authMiddleware: hem company hem employee erişebilir
 router.put('/:id', companyMiddleware, updateAppointment);
+router.post('/:id/cancel', companyMiddleware, cancelAppointment);
 router.delete('/:id', companyMiddleware, deleteAppointment);
 
 module.exports = router;

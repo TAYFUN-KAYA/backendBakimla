@@ -56,7 +56,7 @@ const createAccountingRecord = async (req, res) => {
       expense: expense || 0,
       description,
       category,
-      paymentMethod: paymentMethod || 'cash',
+      paymentMethod: paymentMethod || 'nakit',
     });
 
     res.status(201).json({
@@ -78,12 +78,14 @@ const createAccountingRecord = async (req, res) => {
  */
 const getDailyAccounting = async (req, res) => {
   try {
-    const { companyId, employeeId, date } = req.body;
+    // authMiddleware kullanıldığında req.user._id, companyMiddleware kullanıldığında req.companyId
+    const companyId = req.user?._id || req.body.companyId || req.companyId;
+    const { employeeId, date } = req.body;
 
     if (!companyId || !date) {
       return res.status(400).json({
         success: false,
-        message: 'companyId ve date zorunludur',
+        message: 'Kimlik doğrulama ve tarih zorunludur',
       });
     }
 
@@ -124,6 +126,7 @@ const getDailyAccounting = async (req, res) => {
       data: records,
     });
   } catch (error) {
+    console.error('getDailyAccounting error:', error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -137,12 +140,14 @@ const getDailyAccounting = async (req, res) => {
  */
 const getWeeklyAccounting = async (req, res) => {
   try {
-    const { companyId, employeeId, startDate } = req.body;
+    // authMiddleware kullanıldığında req.user._id, companyMiddleware kullanıldığında req.companyId
+    const companyId = req.user?._id || req.body.companyId || req.companyId;
+    const { employeeId, startDate } = req.body;
 
     if (!companyId || !startDate) {
       return res.status(400).json({
         success: false,
-        message: 'companyId ve startDate zorunludur',
+        message: 'Kimlik doğrulama ve startDate zorunludur',
       });
     }
 
@@ -204,6 +209,7 @@ const getWeeklyAccounting = async (req, res) => {
       data: records,
     });
   } catch (error) {
+    console.error('getWeeklyAccounting error:', error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -217,12 +223,14 @@ const getWeeklyAccounting = async (req, res) => {
  */
 const getMonthlyAccounting = async (req, res) => {
   try {
-    const { companyId, employeeId, year, month } = req.body;
+    // authMiddleware kullanıldığında req.user._id, companyMiddleware kullanıldığında req.companyId
+    const companyId = req.user?._id || req.body.companyId || req.companyId;
+    const { employeeId, year, month } = req.body;
 
     if (!companyId || !year || !month) {
       return res.status(400).json({
         success: false,
-        message: 'companyId, year ve month zorunludur',
+        message: 'Kimlik doğrulama, year ve month zorunludur',
       });
     }
 
@@ -289,6 +297,7 @@ const getMonthlyAccounting = async (req, res) => {
       data: records,
     });
   } catch (error) {
+    console.error('getMonthlyAccounting error:', error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -302,18 +311,44 @@ const getMonthlyAccounting = async (req, res) => {
  */
 const getAllAccountingRecords = async (req, res) => {
   try {
-    const { companyId, employeeId } = req.body;
+    // authMiddleware kullanıldığında req.user._id, companyMiddleware kullanıldığında req.companyId
+    const companyId = req.user?._id || req.body.companyId || req.companyId;
+    const { employeeId, category, paymentMethod, startDate, endDate } = req.body;
 
     if (!companyId) {
       return res.status(400).json({
         success: false,
-        message: 'companyId gereklidir',
+        message: 'Kimlik doğrulama gereklidir',
       });
     }
 
     const query = { companyId };
+    
     if (employeeId) {
       query.employeeId = employeeId;
+    }
+    
+    if (category) {
+      query.category = category;
+    }
+    
+    if (paymentMethod) {
+      query.paymentMethod = paymentMethod;
+    }
+    
+    // Date range filter
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        query.date.$gte = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.date.$lte = end;
+      }
     }
 
     const records = await Accounting.find(query)
@@ -326,6 +361,7 @@ const getAllAccountingRecords = async (req, res) => {
       data: records,
     });
   } catch (error) {
+    console.error('getAllAccountingRecords error:', error);
     res.status(500).json({
       success: false,
       message: error.message,

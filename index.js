@@ -47,6 +47,10 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/rewards', require('./routes/rewardRoutes'));
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/campaigns', campaignRoutes);
+// Debug: Route test endpoint
+app.get('/api/test-campaigns', (req, res) => {
+  res.json({ message: 'Campaign routes are working', path: '/api/campaigns' });
+});
 app.use('/api/coupons', couponRoutes);
 app.use('/api/forms', formRoutes);
 app.use('/api/products', productRoutes);

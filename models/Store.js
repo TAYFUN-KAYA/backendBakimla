@@ -42,7 +42,9 @@ const storeSchema = new mongoose.Schema(
       type: String,
       required: [true, 'IBAN numarası zorunludur'],
       trim: true,
-      match: [/^TR[0-9]{24}$/, 'Geçerli bir IBAN numarası giriniz (TR ile başlamalı)'],
+      // Relaxed validation - pre-save hook will format it
+      minlength: [10, 'IBAN çok kısa'],
+      maxlength: [50, 'IBAN çok uzun'],
     },
     businessDescription: {
       type: String,
@@ -51,8 +53,9 @@ const storeSchema = new mongoose.Schema(
     },
     businessPassword: {
       type: String,
-      required: [true, 'İşletme parolası zorunludur'],
+      required: false, // Made optional for registration flow
       minlength: [6, 'İşletme parolası en az 6 karakter olmalıdır'],
+      default: null,
     },
     interiorImage: {
       type: String,
@@ -65,6 +68,10 @@ const storeSchema = new mongoose.Schema(
     appIcon: {
       type: String,
       required: [true, 'App ikonu görseli zorunludur'],
+    },
+    serviceImages: {
+      type: [String],
+      default: [],
     },
     workingDays: [
       {
@@ -89,30 +96,64 @@ const storeSchema = new mongoose.Schema(
         },
       },
     ],
-    sectors: {
-      type: [String],
-      required: [true, 'En az bir sektör seçilmelidir'],
-    },
-    serviceType: {
-      type: String,
-      required: [true, 'Hizmet tipi zorunludur'],
-      trim: true,
-    },
-    serviceDuration: {
-      type: Number,
-      required: [true, 'Hizmet süresi zorunludur'],
-      min: [1, 'Hizmet süresi en az 1 olmalıdır'],
-    },
-    servicePrice: {
-      type: Number,
-      required: [true, 'Hizmet fiyatı zorunludur'],
-      min: [0, 'Hizmet fiyatı 0 veya daha büyük olmalıdır'],
-    },
-    serviceCategory: {
-      type: String,
-      required: [true, 'Hizmet kategorisi zorunludur'],
-      trim: true,
-    },
+    sectors: [
+      {
+        id: {
+          type: Number,
+          required: [true, 'Sektör ID zorunludur'],
+        },
+        name: {
+          type: String,
+          required: [true, 'Sektör adı zorunludur'],
+          trim: true,
+        },
+        key: {
+          type: String,
+          required: [true, 'Sektör key zorunludur'],
+          trim: true,
+        },
+      },
+    ],
+    // Multiple services array (new structure)
+    services: [
+      {
+        name: {
+          type: String,
+          required: [true, 'Hizmet adı zorunludur'],
+          trim: true,
+        },
+        category: {
+          type: String,
+          required: [true, 'Hizmet kategorisi zorunludur'],
+          trim: true,
+        },
+        duration: {
+          type: Number,
+          required: [true, 'Hizmet süresi zorunludur'],
+          min: [1, 'Hizmet süresi en az 1 dakika olmalıdır'],
+          // Duration is stored in minutes
+        },
+        price: {
+          type: Number,
+          required: [true, 'Hizmet fiyatı zorunludur'],
+          min: [0, 'Hizmet fiyatı 0 veya daha büyük olmalıdır'],
+        },
+        cancelDuration: {
+          type: Number,
+          default: 0,
+          min: [0, 'İptal süresi 0 veya daha büyük olmalıdır'],
+          // Cancel duration is stored in minutes
+        },
+        description: {
+          type: String,
+          trim: true,
+        },
+        isActive: {
+          type: Boolean,
+          default: true,
+        },
+      },
+    ],
     businessField: {
       type: String,
       required: [true, 'İşletme iş alanı zorunludur'],
@@ -147,6 +188,41 @@ const storeSchema = new mongoose.Schema(
         type: String,
         trim: true,
       },
+      no: {
+        type: String,
+        trim: true,
+      },
+      addressDetail: {
+        type: String,
+        trim: true,
+      },
+    },
+    location: {
+      latitude: {
+        type: Number,
+        required: false,
+      },
+      longitude: {
+        type: Number,
+        required: false,
+      },
+      address: {
+        type: String,
+        trim: true,
+      },
+    },
+    storeCode: {
+      type: String,
+      unique: true,
+      sparse: true, // Allow null values but ensure uniqueness when present
+      trim: true,
+      match: [/^[0-9]{6}$/, 'Store code must be exactly 6 digits'],
+    },
+    storeLink: {
+      type: String,
+      unique: true,
+      sparse: true, // Allow null values but ensure uniqueness when present
+      trim: true,
     },
     installmentSettings: {
       enabled: {
@@ -159,11 +235,55 @@ const storeSchema = new mongoose.Schema(
         enum: [1, 2, 3, 6, 9, 12],
       },
     },
+    isOpen: {
+      type: Boolean,
+      default: true,
+    },
+    alwaysAcceptAppointmentRequests: {
+      type: Boolean,
+      default: false,
+    },
+    notificationPreferences: {
+      appointmentReminder: {
+        type: Boolean,
+        default: true,
+      },
+      campaignNotifications: {
+        type: Boolean,
+        default: true,
+      },
+    },
   },
   {
     timestamps: true,
   }
 );
+
+// Pre-save hook to format IBAN
+storeSchema.pre('save', function(next) {
+  if (this.iban) {
+    // Remove spaces and convert to uppercase
+    let iban = this.iban.replace(/\s/g, '').toUpperCase();
+    
+    // Add TR prefix if not present
+    if (!iban.startsWith('TR')) {
+      iban = 'TR' + iban;
+    }
+    
+    // Ensure exactly 26 characters
+    if (iban.length < 26) {
+      // Pad with zeros after TR
+      const digitsNeeded = 26 - iban.length;
+      iban = 'TR' + '0'.repeat(digitsNeeded) + iban.slice(2);
+    } else if (iban.length > 26) {
+      // Truncate to 26 characters
+      iban = iban.slice(0, 26);
+    }
+    
+    this.iban = iban;
+  }
+  next();
+});
 
 module.exports = mongoose.model('Store', storeSchema);
 

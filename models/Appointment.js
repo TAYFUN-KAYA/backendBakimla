@@ -116,6 +116,21 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    cancellationReason: {
+      type: String,
+      trim: true,
+    },
+    // Birden fazla müşteri için birbirine bağlı randevuları gruplamak için
+    groupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Appointment',
+      default: null,
+    },
+    // Iyzico payment link ID (SMS ile ödeme için)
+    iyzicoLinkId: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,

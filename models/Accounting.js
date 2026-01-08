@@ -11,6 +11,10 @@ const accountingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
+    appointmentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Appointment',
+    },
     date: {
       type: Date,
       required: [true, 'Tarih zorunludur'],
@@ -35,8 +39,8 @@ const accountingSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['cash', 'card', 'transfer', 'other'],
-      default: 'cash',
+      enum: ['nakit', 'iban', 'online'],
+      default: 'nakit',
     },
   },
   {

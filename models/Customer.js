@@ -27,6 +27,10 @@ const customerSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    profileImage: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true,

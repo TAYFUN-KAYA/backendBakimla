@@ -7,8 +7,10 @@ const User = require('../models/User');
  */
 const createCoupon = async (req, res) => {
   try {
+    // authMiddleware kullanıldığında req.user._id, companyMiddleware kullanıldığında req.companyId
+    const companyId = req.user?._id || req.body.companyId || req.companyId;
+    
     const {
-      companyId,
       code,
       title,
       description,
@@ -93,6 +95,7 @@ const createCoupon = async (req, res) => {
       data: coupon,
     });
   } catch (error) {
+    console.error('createCoupon error:', error);
     res.status(400).json({
       success: false,
       message: error.message,
@@ -106,7 +109,8 @@ const createCoupon = async (req, res) => {
  */
 const getCompanyCoupons = async (req, res) => {
   try {
-    const { companyId } = req.body;
+    // authMiddleware kullanıldığında req.user._id, companyMiddleware kullanıldığında req.companyId
+    const companyId = req.user?._id || req.body.companyId || req.companyId;
     const { isActive } = req.query;
 
     if (!companyId) {
@@ -131,6 +135,7 @@ const getCompanyCoupons = async (req, res) => {
       data: coupons,
     });
   } catch (error) {
+    console.error('getCompanyCoupons error:', error);
     res.status(500).json({
       success: false,
       message: error.message,

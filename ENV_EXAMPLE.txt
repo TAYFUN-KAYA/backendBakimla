@@ -1,0 +1,40 @@
+# MongoDB
+MONGO_URI=mongodb://localhost:27017/bakimla
+
+# JWT Secret
+JWT_SECRET=your_jwt_secret_key_here
+
+# Server Port
+PORT=3001
+
+# AWS S3 Configuration
+AWS_ACCESS_KEY_ID=your_aws_access_key_id
+AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
+AWS_REGION=eu-west-1
+AWS_S3_BUCKET=your_bucket_name
+
+# AWS CloudFront (Optional - if using CloudFront CDN)
+# AWS_CLOUDFRONT_URL=https://d1234567890.cloudfront.net
+
+# OR Direct S3 URL (Optional - will be auto-generated if not provided)
+# AWS_S3_BASE_URL=https://your_bucket_name.s3.eu-west-1.amazonaws.com
+
+# NetGSM (SMS Service)
+NETGSM_USERNAME=your_netgsm_username
+NETGSM_PASSWORD=your_netgsm_password
+NETGSM_HEADER=your_netgsm_header
+
+# Iyzico (Payment Gateway)
+IYZICO_API_KEY=your_iyzico_api_key
+IYZICO_SECRET_KEY=your_iyzico_secret_key
+IYZICO_BASE_URL=https://sandbox-api.iyzipay.com
+
+# Parasut (Accounting API)
+PARASUT_CLIENT_ID=your_parasut_client_id
+PARASUT_CLIENT_SECRET=your_parasut_client_secret
+PARASUT_USERNAME=your_parasut_username
+PARASUT_PASSWORD=your_parasut_password
+PARASUT_COMPANY_ID=your_parasut_company_id
+
+# Environment
+NODE_ENV=development

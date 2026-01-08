@@ -8,14 +8,15 @@ const {
   getAllAccountingRecords,
   getEmployeeAccounting,
 } = require('../controllers/accountingController');
-const { companyMiddleware } = require('../middleware/authMiddleware');
+const { companyMiddleware, authMiddleware } = require('../middleware/authMiddleware');
 
-router.post('/', companyMiddleware, createAccountingRecord);
-router.get('/all', companyMiddleware, getAllAccountingRecords);
-router.post('/daily', companyMiddleware, getDailyAccounting);
-router.post('/weekly', companyMiddleware, getWeeklyAccounting);
-router.post('/monthly', companyMiddleware, getMonthlyAccounting);
-router.post('/employee', companyMiddleware, getEmployeeAccounting);
+// ✅ authMiddleware kullan (token-based authentication)
+router.post('/', authMiddleware, createAccountingRecord);
+router.post('/all', authMiddleware, getAllAccountingRecords); // ✅ GET → POST (body için)
+router.post('/daily', authMiddleware, getDailyAccounting);
+router.post('/weekly', authMiddleware, getWeeklyAccounting);
+router.post('/monthly', authMiddleware, getMonthlyAccounting);
+router.post('/employee', authMiddleware, getEmployeeAccounting);
 
 module.exports = router;
 

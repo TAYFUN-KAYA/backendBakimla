@@ -79,6 +79,14 @@ const userSchema = new mongoose.Schema(
     activeStoreId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Store',
+      // Deprecated: Use activeStoreIds array instead for company users
+    },
+    activeStoreIds: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: 'Store',
+      default: [],
+      // For company users: array of store IDs that are active
+      // Each new store created is automatically added to this array
     },
     notificationPreferences: {
       appointmentReminder: {
@@ -107,6 +115,17 @@ const userSchema = new mongoose.Schema(
         url: String,
       },
     ],
+    jobTitle: {
+      type: String,
+      trim: true,
+      // Employee pozisyonu: 'Kuaför', 'Estetisyen Doktor', 'Masör', 'Güzellik Uzmanı', 'Tırnakçı'
+    },
+    position: {
+      type: String,
+      trim: true,
+      // Position key: 'kuaför', 'estetisyen_doktor', 'masör', 'güzellik_uzmanı', 'tırnakçı'
+      // Enum şimdilik kaldırıldı - constants dosyasından yönetiliyor
+    },
   },
   {
     timestamps: true,

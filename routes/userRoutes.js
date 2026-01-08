@@ -13,11 +13,13 @@ const {
   updatePassword,
   deleteUser,
   getEmployeeStats,
+  getDashboard,
 } = require('../controllers/userController');
 const { authMiddleware, companyMiddleware } = require('../middleware/authMiddleware');
 
 router.get('/', getAllUsers);
-router.get('/employees', getAllEmployees);
+router.get('/employees', authMiddleware, getAllEmployees); // authMiddleware ekledik - token'dan user bilgisi almak için
+router.get('/dashboard', authMiddleware, getDashboard); // Dashboard endpoint
 router.get('/:id', getUserById);
 router.post('/', createUser);
 router.post('/employee', companyMiddleware, createEmployee);

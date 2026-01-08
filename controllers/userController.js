@@ -28,24 +28,63 @@ const getAllUsers = async (req, res) => {
 /**
  * getAllEmployees
  * Tüm çalışanları listeler (şirket bazlı veya tümü)
+ * Eğer req.user varsa (authMiddleware ile), o kullanıcının companyId'sine göre filtreler
  */
 const getAllEmployees = async (req, res) => {
   try {
-    const { companyId, showAll } = req.query;
+    const { companyId: queryCompanyId, showAll, position, jobTitle } = req.query;
 
     const query = { userType: 'employee' };
-    if (showAll !== 'true') {
+    
+    // Sadece aktif (onaylanmış) çalışanları getir
+    if (showAll !== 'true' && showAll !== 'false') {
+      query.isApproved = true;
+    } else if (showAll === 'false') {
       query.isApproved = true;
     }
 
-    if (companyId) {
-      query.companyId = companyId;
+    // Position veya jobTitle filtresi
+    if (position) {
+      query.position = position;
+    } else if (jobTitle) {
+      query.jobTitle = jobTitle;
     }
 
+    // companyId belirleme önceliği:
+    // 1. Query parametresinden gelen companyId
+    // 2. Token'dan gelen user'ın companyId'si (employee ise)
+    // 3. Token'dan gelen user'ın _id'si (company ise)
+    // NOT: userType='user' olan kullanıcılar için companyId filtresi uygulanmaz (tüm estetisyenleri görebilirler)
+    let finalCompanyId = queryCompanyId;
+    
+    if (req.user && req.user.userType !== 'user') {
+      if (req.user.userType === 'employee' && req.user.companyId) {
+        // Employee ise, bağlı olduğu şirketin çalışanlarını getir
+        finalCompanyId = req.user.companyId.toString();
+      } else if (req.user.userType === 'company') {
+        // Company ise, kendi çalışanlarını getir
+        finalCompanyId = req.user._id.toString();
+      }
+    }
+    // userType='user' ise finalCompanyId undefined kalır ve tüm estetisyenler getirilir
+
+    if (finalCompanyId) {
+      query.companyId = finalCompanyId;
+    }
+
+    console.log('🔍 getAllEmployees query:', {
+      query,
+      userType: req.user?.userType,
+      userId: req.user?._id,
+      finalCompanyId
+    });
+
     const employees = await User.find(query)
-      .select('firstName lastName email phoneNumber birthDate profileImage city district companyId isApproved bio expertiseDocuments workExamples')
+      .select('firstName lastName email phoneNumber birthDate profileImage city district companyId isApproved bio expertiseDocuments workExamples jobTitle position')
       .populate('companyId', 'firstName lastName businessName')
       .sort({ createdAt: -1 });
+
+    console.log('✅ Found employees:', employees.length);
 
     res.status(200).json({
       success: true,
@@ -53,6 +92,7 @@ const getAllEmployees = async (req, res) => {
       data: employees,
     });
   } catch (error) {
+    console.error('❌ getAllEmployees error:', error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -202,21 +242,52 @@ const updateUserType = async (req, res) => {
  */
 const updateUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+    const { id } = req.params;
+    const updateData = { ...req.body };
+
+    // Date alanlarını düzelt
+    if (updateData.birthDate) {
+      updateData.birthDate = new Date(updateData.birthDate);
+    }
+
+    // Array alanlarını kontrol et
+    if (updateData.expertiseDocuments !== undefined) {
+      updateData.expertiseDocuments = Array.isArray(updateData.expertiseDocuments) 
+        ? updateData.expertiseDocuments 
+        : [];
+    }
+
+    if (updateData.workExamples !== undefined) {
+      updateData.workExamples = Array.isArray(updateData.workExamples) 
+        ? updateData.workExamples 
+        : [];
+    }
+
+    console.log('📝 Updating user:', { id, updateData: Object.keys(updateData) });
+
+    const user = await User.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     });
+
     if (!user) {
       return res.status(404).json({
         success: false,
         message: 'Kullanıcı bulunamadı',
       });
     }
+
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    console.log('✅ User updated successfully:', { id, updatedFields: Object.keys(updateData) });
+
     res.status(200).json({
       success: true,
-      data: user,
+      data: userResponse,
     });
   } catch (error) {
+    console.error('❌ Update user error:', error);
     res.status(400).json({
       success: false,
       message: error.message,
@@ -465,7 +536,17 @@ const updatePassword = async (req, res) => {
  */
 const createEmployee = async (req, res) => {
   try {
-    const { companyId, firstName, lastName, birthDate, phoneNumber, profileImage, city, district, bio, expertiseDocuments, workExamples } = req.body;
+    const { companyId, firstName, lastName, birthDate, phoneNumber, profileImage, city, district, bio, expertiseDocuments, workExamples, jobTitle, position, isApproved } = req.body;
+
+    console.log('📥 createEmployee request body:', {
+      companyId,
+      firstName,
+      lastName,
+      phoneNumber,
+      profileImage: profileImage || 'null/undefined',
+      jobTitle,
+      isApproved
+    });
 
     if (!companyId || !firstName || !lastName || !phoneNumber) {
       return res.status(400).json({
@@ -509,27 +590,47 @@ const createEmployee = async (req, res) => {
       counter++;
     }
 
-    const employee = await User.create({
+    const employeeData = {
       firstName,
       lastName,
       gender: 'other',
       email: defaultEmail,
       phoneNumber,
       birthDate: birthDate ? new Date(birthDate) : undefined,
-      profileImage,
       city,
       district,
       bio,
       expertiseDocuments,
       workExamples,
+      jobTitle: jobTitle || 'Çalışan',
+      position: position || jobTitle, // Position key (kuaför, estetisyen_doktor, etc.)
       password: defaultPassword,
       userType: 'employee',
       companyId,
-      isApproved: false,
-    });
+      isApproved: isApproved !== undefined ? isApproved : true, // Varsayılan olarak true (otomatik aktif)
+    };
+
+    // profileImage sadece varsa ekle
+    if (profileImage) {
+      employeeData.profileImage = profileImage;
+      console.log('✅ Adding profileImage to employeeData:', profileImage);
+    } else {
+      console.log('⚠️ No profileImage provided, will be null/undefined');
+    }
+
+    console.log('📝 Creating employee with data:', { ...employeeData, profileImage: employeeData.profileImage || 'null/undefined' });
+
+    const employee = await User.create(employeeData);
 
     const employeeResponse = employee.toObject();
     delete employeeResponse.password;
+
+    console.log('✅ Employee created:', {
+      _id: employeeResponse._id,
+      firstName: employeeResponse.firstName,
+      lastName: employeeResponse.lastName,
+      profileImage: employeeResponse.profileImage || 'null'
+    });
 
     res.status(201).json({
       success: true,
@@ -572,6 +673,7 @@ const deleteUser = async (req, res) => {
 const Appointment = require('../models/Appointment');
 const Review = require('../models/Review');
 const Accounting = require('../models/Accounting');
+const Campaign = require('../models/Campaign');
 
 /**
  * getEmployeeStats
@@ -611,6 +713,123 @@ const getEmployeeStats = async (req, res) => {
   }
 };
 
+/**
+ * getDashboard
+ * Ana sayfa için gerekli tüm verileri tek seferde getirir
+ * - User profile
+ * - Active campaigns (company's own)
+ * - Pending appointments
+ * - Recent earnings
+ */
+const getDashboard = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Kullanıcı bulunamadı',
+      });
+    }
+
+    // Get company's active campaigns
+    const now = new Date();
+    const campaigns = await Campaign.find({
+      companyId: userId,
+      isActive: true,
+      startDate: { $lte: now },
+      endDate: { $gte: now },
+    })
+      .select('title shortDescription image discountType discountValue startDate endDate')
+      .sort({ startDate: -1 })
+      .limit(5);
+
+    // Get pending appointments (son 2 gün + gelecek 22 gün = 25 gün)
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    twoDaysAgo.setHours(0, 0, 0, 0);
+    
+    const twentyTwoDaysLater = new Date();
+    twentyTwoDaysLater.setDate(twentyTwoDaysLater.getDate() + 22);
+    twentyTwoDaysLater.setHours(23, 59, 59, 999);
+
+    // Tüm randevuları getir (pending, approved, completed) - cancelled hariç
+    const allAppointments = await Appointment.find({
+      companyId: userId,
+      status: { $nin: ['cancelled'] }, // İptal edilenler hariç tüm randevular
+      appointmentDate: {
+        $gte: twoDaysAgo,
+        $lte: twentyTwoDaysLater,
+      },
+    })
+      .populate('customerIds', 'firstName lastName phoneNumber profileImage')
+      .populate('employeeId', 'firstName lastName')
+      .select('appointmentDate appointmentTime serviceType servicePrice customerIds employeeId status paymentReceived groupId isApproved')
+      .sort({ appointmentDate: 1, appointmentTime: 1 });
+    
+    // groupId varsa, sadece groupId null olan veya groupId kendisi olan randevuları göster (tekrar göstermemek için)
+    // groupId başka bir randevunun _id'si olan randevuları filtrele
+    const pendingAppointments = allAppointments.filter(apt => {
+      // groupId yoksa veya null ise göster
+      if (!apt.groupId) return true;
+      
+      // groupId varsa, sadece groupId kendisi ise göster (ilk randevu)
+      // Yani apt._id === apt.groupId ise göster
+      return apt._id.toString() === apt.groupId.toString();
+    });
+
+    // Get earnings for last 25 days (2 gün önce + bugün + 22 gün sonra)
+    const earningsRecords = await Accounting.find({
+      companyId: userId,
+      date: {
+        $gte: twoDaysAgo,
+        $lte: twentyTwoDaysLater,
+      },
+    })
+      .populate('employeeId', 'firstName lastName')
+      .select('income expense category employeeId date appointmentId')
+      .sort({ date: -1 });
+
+    // Bugünün özet bilgileri
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    const todayEarnings = earningsRecords.filter(record => {
+      const recordDate = new Date(record.date);
+      return recordDate >= startOfToday && recordDate <= endOfToday;
+    });
+
+    const totalIncome = todayEarnings.reduce((sum, record) => sum + (record.income || 0), 0);
+    const totalExpense = todayEarnings.reduce((sum, record) => sum + (record.expense || 0), 0);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user,
+        campaigns,
+        pendingAppointments,
+        earnings: {
+          records: earningsRecords, // Tüm kayıtlar (25 gün)
+          summary: {
+            totalIncome, // Bugünün özeti
+            totalExpense,
+            netProfit: totalIncome - totalExpense,
+          },
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Dashboard Error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getAllEmployees,
@@ -624,5 +843,6 @@ module.exports = {
   updatePassword,
   deleteUser,
   getEmployeeStats,
+  getDashboard,
 };
 

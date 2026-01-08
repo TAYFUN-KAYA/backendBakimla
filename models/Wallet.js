@@ -160,6 +160,10 @@ const withdrawalRequestSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    eftDescription: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true,

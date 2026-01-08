@@ -507,10 +507,54 @@ const login = async (req, res) => {
   }
 };
 
+/**
+ * checkUserByPhone
+ * Telefon numarasına göre kullanıcı bilgisini kontrol et (userType kontrolü için)
+ */
+const checkUserByPhone = async (req, res) => {
+  try {
+    const { phoneNumber } = req.params;
+
+    if (!phoneNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Telefon numarası zorunludur',
+      });
+    }
+
+    const user = await User.findOne({ phoneNumber }).select('userType firstName lastName');
+
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        exists: false,
+        message: 'Kullanıcı bulunamadı',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      exists: true,
+      data: {
+        userType: user.userType,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+    });
+  } catch (error) {
+    console.error('Check User By Phone Error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   sendOTPCode,
   verifyOTP,
   register, // Backward compatibility
   login, // Backward compatibility
+  checkUserByPhone,
 };
 

@@ -1,14 +1,51 @@
 const { Wallet, WalletTransaction, WithdrawalRequest } = require('../models/Wallet');
 const User = require('../models/User');
 const Payment = require('../models/Payment');
+const Store = require('../models/Store');
 
 /**
  * getWallet
- * İşletmenin cüzdan bilgilerini getir
+ * İşletmenin cüzdan bilgilerini getir (activeStoreId ile)
  */
 const getWallet = async (req, res) => {
   try {
-    const companyId = req.companyId || req.user._id;
+    const userId = req.user?._id || req.user?.id || req.companyId;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Kullanıcı bilgisi bulunamadı',
+      });
+    }
+
+    // Get activeStoreId from user
+    const user = await User.findById(userId).select('activeStoreId activeStoreIds userType').lean();
+    
+    let activeStoreId = null;
+    if (user?.userType === 'company' && user?.activeStoreIds && Array.isArray(user.activeStoreIds) && user.activeStoreIds.length > 0) {
+      activeStoreId = user.activeStoreId?.toString() || user.activeStoreIds[0]?.toString() || null;
+    } else {
+      activeStoreId = user?.activeStoreId?.toString() || null;
+    }
+
+    if (!activeStoreId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Aktif işletme bulunamadı. Lütfen bir işletme seçin.',
+      });
+    }
+
+    // Get store to find the owner's companyId
+    const store = await Store.findById(activeStoreId).select('companyId').lean();
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'İşletme bulunamadı',
+      });
+    }
+
+    // Wallet is linked to the owner's companyId (User._id)
+    const companyId = store.companyId?._id || store.companyId;
 
     let wallet = await Wallet.findOne({ companyId });
 
@@ -37,12 +74,48 @@ const getWallet = async (req, res) => {
 
 /**
  * getWalletTransactions
- * Cüzdan işlem geçmişini getir
+ * Cüzdan işlem geçmişini getir (activeStoreId ile, withdrawal request'leri dahil)
  */
 const getWalletTransactions = async (req, res) => {
   try {
-    const companyId = req.companyId || req.user._id;
+    const userId = req.user?._id || req.user?.id || req.companyId;
     const { page = 1, limit = 20, type } = req.query;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Kullanıcı bilgisi bulunamadı',
+      });
+    }
+
+    // Get activeStoreId from user
+    const user = await User.findById(userId).select('activeStoreId activeStoreIds userType').lean();
+    
+    let activeStoreId = null;
+    if (user?.userType === 'company' && user?.activeStoreIds && Array.isArray(user.activeStoreIds) && user.activeStoreIds.length > 0) {
+      activeStoreId = user.activeStoreId?.toString() || user.activeStoreIds[0]?.toString() || null;
+    } else {
+      activeStoreId = user?.activeStoreId?.toString() || null;
+    }
+
+    if (!activeStoreId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Aktif işletme bulunamadı. Lütfen bir işletme seçin.',
+      });
+    }
+
+    // Get store to find the owner's companyId
+    const store = await Store.findById(activeStoreId).select('companyId').lean();
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'İşletme bulunamadı',
+      });
+    }
+
+    // Wallet is linked to the owner's companyId (User._id)
+    const companyId = store.companyId?._id || store.companyId;
 
     const wallet = await Wallet.findOne({ companyId });
     if (!wallet) {
@@ -57,22 +130,70 @@ const getWalletTransactions = async (req, res) => {
       query.type = type;
     }
 
+    // Get wallet transactions
     const transactions = await WalletTransaction.find(query)
       .populate('paymentId', 'price paymentStatus')
       .populate('appointmentId', 'appointmentDate servicePrice')
+      .populate('withdrawalRequestId')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
+    // Get withdrawal requests for this company
+    const withdrawalRequests = await WithdrawalRequest.find({ companyId })
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .lean();
+
+    // Combine transactions and withdrawal requests
+    const allTransactions = transactions.map(tx => ({
+      ...tx.toObject(),
+      _id: tx._id,
+      type: tx.type,
+      amount: tx.amount,
+      description: tx.description,
+      status: tx.status,
+      createdAt: tx.createdAt,
+      isWithdrawalRequest: false,
+    }));
+
+    // Add withdrawal requests as transactions
+    withdrawalRequests.forEach(wr => {
+      allTransactions.push({
+        _id: wr._id,
+        type: 'withdrawal',
+        amount: wr.amount,
+        description: `Para çekme talebi - ${wr.accountHolderName}`,
+        status: wr.status === 'pending' ? 'pending' : wr.status === 'processing' ? 'pending' : wr.status === 'completed' ? 'completed' : 'failed',
+        createdAt: wr.createdAt,
+        isWithdrawalRequest: true,
+        withdrawalRequest: {
+          _id: wr._id,
+          iban: wr.iban,
+          accountHolderName: wr.accountHolderName,
+          eftDescription: wr.eftDescription,
+          status: wr.status,
+          createdAt: wr.createdAt,
+          processedAt: wr.processedAt,
+        },
+      });
+    });
+
+    // Sort by createdAt descending
+    allTransactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
     const total = await WalletTransaction.countDocuments(query);
+    const totalWithdrawals = await WithdrawalRequest.countDocuments({ companyId });
+    const totalCount = total + totalWithdrawals;
 
     res.status(200).json({
       success: true,
-      count: transactions.length,
-      total,
+      count: allTransactions.length,
+      total: totalCount,
       page: parseInt(page),
-      totalPages: Math.ceil(total / limit),
-      data: transactions,
+      totalPages: Math.ceil(totalCount / limit),
+      data: allTransactions,
     });
   } catch (error) {
     console.error('Get Wallet Transactions Error:', error);
@@ -85,12 +206,19 @@ const getWalletTransactions = async (req, res) => {
 
 /**
  * createWithdrawalRequest
- * Para çekme talebi oluştur
+ * Para çekme talebi oluştur (activeStoreId ile)
  */
 const createWithdrawalRequest = async (req, res) => {
   try {
-    const companyId = req.companyId || req.user._id;
-    const { amount, iban, accountHolderName, bankName } = req.body;
+    const userId = req.user?._id || req.user?.id || req.companyId;
+    const { amount, iban, accountHolderName, bankName, eftDescription } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Kullanıcı bilgisi bulunamadı',
+      });
+    }
 
     if (!amount || !iban || !accountHolderName) {
       return res.status(400).json({
@@ -105,6 +233,35 @@ const createWithdrawalRequest = async (req, res) => {
         message: 'Tutar 0\'dan büyük olmalıdır',
       });
     }
+
+    // Get activeStoreId from user
+    const user = await User.findById(userId).select('activeStoreId activeStoreIds userType').lean();
+    
+    let activeStoreId = null;
+    if (user?.userType === 'company' && user?.activeStoreIds && Array.isArray(user.activeStoreIds) && user.activeStoreIds.length > 0) {
+      activeStoreId = user.activeStoreId?.toString() || user.activeStoreIds[0]?.toString() || null;
+    } else {
+      activeStoreId = user?.activeStoreId?.toString() || null;
+    }
+
+    if (!activeStoreId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Aktif işletme bulunamadı. Lütfen bir işletme seçin.',
+      });
+    }
+
+    // Get store to find the owner's companyId
+    const store = await Store.findById(activeStoreId).select('companyId').lean();
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'İşletme bulunamadı',
+      });
+    }
+
+    // Wallet is linked to the owner's companyId (User._id)
+    const companyId = store.companyId?._id || store.companyId;
 
     const wallet = await Wallet.findOne({ companyId });
     if (!wallet) {
@@ -121,24 +278,20 @@ const createWithdrawalRequest = async (req, res) => {
       });
     }
 
-    // IBAN'ı Store'dan al (varsa)
-    const store = await require('../models/Store').findOne({ companyId });
-    const finalIban = iban || store?.iban;
+    // Clean IBAN (remove spaces)
+    const cleanIban = iban.replace(/\s/g, '').toUpperCase();
 
-    if (!finalIban) {
-      return res.status(400).json({
-        success: false,
-        message: 'IBAN bilgisi bulunamadı',
-      });
-    }
+    // Generate EFT description if not provided
+    const finalEftDescription = eftDescription || `bakimla_${new Date().toLocaleDateString('tr-TR').replace(/\./g, '-')}_${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }).replace(':', '-')}`;
 
     const withdrawalRequest = await WithdrawalRequest.create({
       companyId,
       walletId: wallet._id,
       amount,
-      iban: finalIban,
-      accountHolderName: accountHolderName || store?.authorizedPersonName,
-      bankName,
+      iban: cleanIban,
+      accountHolderName: accountHolderName.trim(),
+      bankName: bankName?.trim() || null,
+      eftDescription: finalEftDescription,
       status: 'pending',
     });
 

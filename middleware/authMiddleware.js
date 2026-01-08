@@ -19,7 +19,7 @@ const authMiddleware = async (req, res, next) => {
     const token = authHeader.substring(7);
 
     const decoded = verifyToken(token);
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(decoded.userId).lean();
 
     if (!user) {
       return res.status(401).json({
@@ -28,6 +28,14 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
+    // Debug log
+    console.log('authMiddleware - User found:', {
+      userId: user._id,
+      userType: user.userType,
+      phoneNumber: user.phoneNumber,
+      tokenUserId: decoded.userId
+    });
+
     if (user.userType === 'employee' && !user.isApproved) {
       return res.status(403).json({
         success: false,
@@ -35,6 +43,7 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
+    // User objesini req'e ekle (lean() zaten plain object döndürür)
     req.user = user;
     next();
   } catch (error) {

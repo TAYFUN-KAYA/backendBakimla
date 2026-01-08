@@ -7,11 +7,14 @@ const User = require('../models/User');
  */
 const createCampaign = async (req, res) => {
   try {
+    // authMiddleware kullanıldığında req.user._id, companyMiddleware kullanıldığında req.companyId
+    const companyId = req.user?._id || req.body.companyId || req.companyId;
+    
     const {
-      companyId,
       title,
       shortDescription,
       serviceCategory,
+      servicesId,
       discountType,
       discountValue,
       startDate,
@@ -76,6 +79,7 @@ const createCampaign = async (req, res) => {
       title,
       shortDescription,
       serviceCategory,
+      servicesId: servicesId || null,
       discountType,
       discountValue,
       startDate: startDateObj,
@@ -91,6 +95,7 @@ const createCampaign = async (req, res) => {
       data: campaign,
     });
   } catch (error) {
+    console.error('createCampaign error:', error);
     res.status(400).json({
       success: false,
       message: error.message,
@@ -104,7 +109,8 @@ const createCampaign = async (req, res) => {
  */
 const getCompanyCampaigns = async (req, res) => {
   try {
-    const { companyId } = req.body;
+    // authMiddleware kullanıldığında req.user._id, companyMiddleware kullanıldığında req.companyId
+    const companyId = req.user?._id || req.body.companyId || req.companyId;
     const { isActive } = req.query;
 
     if (!companyId) {
@@ -129,6 +135,7 @@ const getCompanyCampaigns = async (req, res) => {
       data: campaigns,
     });
   } catch (error) {
+    console.error('getCompanyCampaigns error:', error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -227,11 +234,97 @@ const deleteCampaign = async (req, res) => {
   }
 };
 
+/**
+ * getCosmeticStorePromos
+ * Kozmetik store için özel promo/campaign carousel verilerini getirir
+ */
+const getCosmeticStorePromos = async (req, res) => {
+  try {
+    console.log('getCosmeticStorePromos called'); // Debug log
+    // Campaign modelinin var olduğundan emin ol
+    if (!Campaign) {
+      console.error('Campaign model is not available');
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+      });
+    }
+
+    const { limit = 5 } = req.query;
+    const now = new Date();
+
+    let promos = [];
+
+    try {
+      // Kozmetik store için kampanyalar (serviceCategory: 'Kozmetik' veya benzeri)
+      const campaigns = await Campaign.find({
+        isActive: true,
+        startDate: { $lte: now },
+        endDate: { $gte: now },
+        $or: [
+          { serviceCategory: { $regex: /kozmetik|cosmetic|ürün|product/i } },
+          { serviceCategory: 'Kozmetik' },
+        ],
+      })
+        .populate('companyId', 'firstName lastName profileImage')
+        .sort({ startDate: -1 })
+        .limit(parseInt(limit))
+        .lean()
+        .exec();
+
+      // Eğer kampanya yoksa, genel aktif kampanyalardan al
+      if (campaigns && campaigns.length > 0) {
+        promos = campaigns;
+      } else {
+        const generalCampaigns = await Campaign.find({
+          isActive: true,
+          startDate: { $lte: now },
+          endDate: { $gte: now },
+        })
+          .populate('companyId', 'firstName lastName profileImage')
+          .sort({ startDate: -1 })
+          .limit(parseInt(limit))
+          .lean()
+          .exec();
+        
+        promos = generalCampaigns || [];
+      }
+    } catch (dbError) {
+      console.error('Database query error in getCosmeticStorePromos:', dbError);
+      console.error('DB Error details:', {
+        message: dbError.message,
+        name: dbError.name,
+        stack: dbError.stack,
+      });
+      // Veritabanı hatası varsa boş array döndür
+      promos = [];
+    }
+
+    res.status(200).json({
+      success: true,
+      count: promos.length,
+      data: promos,
+    });
+  } catch (error) {
+    console.error('getCosmeticStorePromos error:', error);
+    console.error('Error stack:', error.stack);
+    // Hata durumunda bile boş array döndür, uygulama çalışmaya devam etsin
+    res.status(200).json({
+      success: true,
+      count: 0,
+      data: [],
+      message: 'Promo verileri yüklenirken bir hata oluştu',
+    });
+  }
+};
+
 module.exports = {
   createCampaign,
   getCompanyCampaigns,
   getActiveCampaigns,
   updateCampaign,
   deleteCampaign,
+  getCosmeticStorePromos,
 };
 

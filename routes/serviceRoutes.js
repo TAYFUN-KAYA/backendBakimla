@@ -6,10 +6,10 @@ const {
     updateService,
     deleteService,
 } = require('../controllers/serviceController');
-const { companyMiddleware } = require('../middleware/authMiddleware');
+const { companyMiddleware, authMiddleware } = require('../middleware/authMiddleware');
 
 router.post('/', companyMiddleware, createService);
-router.get('/', companyMiddleware, getCompanyServices);
+router.get('/', authMiddleware, getCompanyServices); // authMiddleware: hem company hem employee erişebilir
 router.put('/:id', companyMiddleware, updateService);
 router.delete('/:id', companyMiddleware, deleteService);
 

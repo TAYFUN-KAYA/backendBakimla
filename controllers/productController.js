@@ -325,6 +325,116 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+/**
+ * getCategories
+ * Tüm kategorileri listeler (unique category listesi)
+ */
+const getCategories = async (req, res) => {
+  try {
+    const { gender } = req.query; // 'kadin' veya 'erkek' filtresi için
+
+    // Product modelinin var olduğundan emin ol
+    if (!Product) {
+      console.error('Product model is not available');
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+      });
+    }
+
+    const query = { isPublished: true, isActive: true };
+    
+    // Gender filtresi varsa (gelecekte category'ye göre filtreleme yapılabilir)
+    // Şimdilik tüm kategorileri getir
+
+    // Önce tüm ürünleri getir, sonra JavaScript'te grupla (daha güvenli)
+    let products = [];
+    try {
+      products = await Product.find(query).select('category images').lean().exec();
+    } catch (dbError) {
+      console.error('Database query error in getCategories:', dbError);
+      console.error('DB Error details:', {
+        message: dbError.message,
+        name: dbError.name,
+        stack: dbError.stack,
+      });
+      // Veritabanı hatası varsa boş array döndür
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+        message: 'Kategoriler şu anda yüklenemiyor',
+      });
+    }
+
+    // Kategorileri grupla
+    const categoryMap = {};
+    
+    if (products && Array.isArray(products) && products.length > 0) {
+      products.forEach(product => {
+        try {
+          if (product && product.category && typeof product.category === 'string') {
+            const categoryName = product.category.trim();
+            if (categoryName) {
+              if (!categoryMap[categoryName]) {
+                categoryMap[categoryName] = {
+                  name: categoryName,
+                  count: 0,
+                  image: null,
+                };
+              }
+              categoryMap[categoryName].count++;
+              
+              // İlk resim bulunan ürünü kaydet
+              if (!categoryMap[categoryName].image && 
+                  product.images && 
+                  Array.isArray(product.images) && 
+                  product.images.length > 0 &&
+                  product.images[0] &&
+                  typeof product.images[0] === 'string') {
+                categoryMap[categoryName].image = product.images[0];
+              }
+            }
+          }
+        } catch (itemError) {
+          console.error('Error processing product item:', itemError);
+          // Bir ürün işlenirken hata olsa bile devam et
+        }
+      });
+    }
+
+    // Map'i array'e çevir ve sırala
+    const categories = Object.values(categoryMap).sort((a, b) => {
+      const nameA = (a.name || '').toString();
+      const nameB = (b.name || '').toString();
+      return nameA.localeCompare(nameB);
+    });
+
+    res.status(200).json({
+      success: true,
+      count: categories.length,
+      data: categories,
+    });
+  } catch (error) {
+    console.error('getCategories error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+    });
+    
+    // Hata durumunda bile boş array döndür, uygulama çalışmaya devam etsin
+    res.status(200).json({
+      success: true,
+      count: 0,
+      data: [],
+      message: 'Kategoriler yüklenirken bir hata oluştu',
+    });
+  }
+};
+
 module.exports = {
   createProduct,
   getAllProducts,
@@ -333,5 +443,6 @@ module.exports = {
   getProductById,
   updateProduct,
   deleteProduct,
+  getCategories,
 };
 
