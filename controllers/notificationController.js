@@ -48,16 +48,17 @@ const createNotification = async (req, res) => {
 
 /**
  * getUserNotifications
- * Kullanıcının tüm bildirimlerini getirir
+ * Kullanıcının tüm bildirimlerini getirir (authMiddleware'den gelen userId ile)
  */
 const getUserNotifications = async (req, res) => {
   try {
-    const { userId } = req.body;
+    // authMiddleware'den gelen userId'yi kullan
+    const userId = req.user?._id || req.body?.userId;
 
     if (!userId) {
       return res.status(400).json({
         success: false,
-        message: 'userId gereklidir',
+        message: 'Kullanıcı bilgisi bulunamadı',
       });
     }
 
@@ -86,16 +87,17 @@ const getUserNotifications = async (req, res) => {
 
 /**
  * getUnreadNotifications
- * Okunmamış bildirimleri getirir
+ * Okunmamış bildirimleri getirir (authMiddleware'den gelen userId ile)
  */
 const getUnreadNotifications = async (req, res) => {
   try {
-    const { userId } = req.body;
+    // authMiddleware'den gelen userId'yi kullan
+    const userId = req.user?._id || req.body?.userId;
 
     if (!userId) {
       return res.status(400).json({
         success: false,
-        message: 'userId gereklidir',
+        message: 'Kullanıcı bilgisi bulunamadı',
       });
     }
 
@@ -121,24 +123,33 @@ const getUnreadNotifications = async (req, res) => {
 
 /**
  * markAsRead
- * Bildirimi okundu olarak işaretler
+ * Bildirimi okundu olarak işaretler (sadece kullanıcının kendi bildirimini)
  */
 const markAsRead = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user?._id;
 
-    const notification = await Notification.findByIdAndUpdate(
-      id,
-      { isRead: true },
-      { new: true }
-    );
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Kullanıcı bilgisi bulunamadı',
+      });
+    }
+
+    // Bildirimin kullanıcıya ait olduğunu kontrol et
+    const notification = await Notification.findOne({ _id: id, userId });
 
     if (!notification) {
       return res.status(404).json({
         success: false,
-        message: 'Bildirim bulunamadı',
+        message: 'Bildirim bulunamadı veya bu bildirime erişim yetkiniz yok',
       });
     }
+
+    // Okundu olarak işaretle
+    notification.isRead = true;
+    await notification.save();
 
     res.status(200).json({
       success: true,
@@ -155,16 +166,17 @@ const markAsRead = async (req, res) => {
 
 /**
  * markAllAsRead
- * Kullanıcının tüm bildirimlerini okundu olarak işaretler
+ * Kullanıcının tüm bildirimlerini okundu olarak işaretler (authMiddleware'den gelen userId ile)
  */
 const markAllAsRead = async (req, res) => {
   try {
-    const { userId } = req.body;
+    // authMiddleware'den gelen userId'yi kullan
+    const userId = req.user?._id || req.body?.userId;
 
     if (!userId) {
       return res.status(400).json({
         success: false,
-        message: 'userId gereklidir',
+        message: 'Kullanıcı bilgisi bulunamadı',
       });
     }
 
@@ -188,18 +200,27 @@ const markAllAsRead = async (req, res) => {
 
 /**
  * deleteNotification
- * Bildirimi siler
+ * Bildirimi siler (sadece kullanıcının kendi bildirimini)
  */
 const deleteNotification = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user?._id;
 
-    const notification = await Notification.findByIdAndDelete(id);
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Kullanıcı bilgisi bulunamadı',
+      });
+    }
+
+    // Bildirimin kullanıcıya ait olduğunu kontrol et ve sil
+    const notification = await Notification.findOneAndDelete({ _id: id, userId });
 
     if (!notification) {
       return res.status(404).json({
         success: false,
-        message: 'Bildirim bulunamadı',
+        message: 'Bildirim bulunamadı veya bu bildirime erişim yetkiniz yok',
       });
     }
 

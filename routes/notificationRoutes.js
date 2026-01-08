@@ -12,8 +12,8 @@ const {
 const { authMiddleware } = require('../middleware/authMiddleware');
 
 router.post('/', authMiddleware, createNotification);
-router.post('/user', authMiddleware, getUserNotifications);
-router.post('/unread', authMiddleware, getUnreadNotifications);
+router.get('/user', authMiddleware, getUserNotifications);
+router.get('/unread', authMiddleware, getUnreadNotifications);
 router.put('/:id/read', authMiddleware, markAsRead);
 router.put('/read-all', authMiddleware, markAllAsRead);
 router.delete('/:id', authMiddleware, deleteNotification);

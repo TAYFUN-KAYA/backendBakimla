@@ -647,25 +647,168 @@ const createEmployee = async (req, res) => {
 
 /**
  * deleteUser
- * Kullanıcıyı siler
+ * Kullanıcıyı ve tüm ilgili verilerini siler
  */
 const deleteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const userId = req.user?._id || req.params.id;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Kullanıcı ID gereklidir',
+      });
+    }
+
+    // Kullanıcıyı bul
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
         success: false,
         message: 'Kullanıcı bulunamadı',
       });
     }
+
+    // Tüm ilgili verileri sil (companyId veya userId ile ilişkili)
+    const Store = require('../models/Store');
+    const Customer = require('../models/Customer');
+    const Service = require('../models/Service');
+    const Product = require('../models/Product');
+    const { Reward, RewardTransaction } = require('../models/Reward');
+    const Payment = require('../models/Payment');
+    const Accounting = require('../models/Accounting');
+    const Invoice = require('../models/Invoice');
+    const Notification = require('../models/Notification');
+    const Favorite = require('../models/Favorite');
+    const Cart = require('../models/Cart');
+    const Address = require('../models/Address');
+    const { Wallet, WalletTransaction, WithdrawalRequest } = require('../models/Wallet');
+    const { Points, PointsTransaction } = require('../models/Points');
+    const PaymentMethod = require('../models/PaymentMethod');
+    const QuickAppointment = require('../models/QuickAppointment');
+    const Order = require('../models/Order');
+
+    // Paralel olarak tüm ilgili verileri sil
+    await Promise.all([
+      // Store ve ilgili veriler
+      Store.deleteMany({ companyId: userId }),
+      
+      // Customer verileri
+      Customer.deleteMany({ companyId: userId }),
+      
+      // Service verileri
+      Service.deleteMany({ companyId: userId }),
+      
+      // Product verileri
+      Product.deleteMany({ companyId: userId }),
+      
+      // Campaign verileri
+      Campaign.deleteMany({ companyId: userId }),
+      
+      // Coupon verileri
+      Coupon.deleteMany({ companyId: userId }),
+      
+      // Reward verileri
+      Reward.deleteMany({ companyId: userId }),
+      RewardTransaction.deleteMany({ companyId: userId }),
+      
+      // Appointment verileri (companyId veya employeeId veya userId)
+      Appointment.deleteMany({ 
+        $or: [
+          { companyId: userId },
+          { employeeId: userId },
+          { userId: userId }
+        ]
+      }),
+      
+      // Review verileri
+      Review.deleteMany({ 
+        $or: [
+          { companyId: userId },
+          { userId: userId },
+          { employeeId: userId }
+        ]
+      }),
+      
+      // Payment verileri
+      Payment.deleteMany({ companyId: userId }),
+      
+      // Accounting verileri
+      Accounting.deleteMany({ 
+        $or: [
+          { companyId: userId },
+          { employeeId: userId }
+        ]
+      }),
+      
+      // Invoice verileri (userId ile)
+      Invoice.deleteMany({ userId: userId }),
+      
+      // Order verileri (userId ile)
+      Order.deleteMany({ userId: userId }),
+      
+      // Notification verileri
+      Notification.deleteMany({ 
+        $or: [
+          { userId: userId },
+          { companyId: userId }
+        ]
+      }),
+      
+      // Favorite verileri
+      Favorite.deleteMany({ userId: userId }),
+      
+      // Cart verileri
+      Cart.deleteMany({ userId: userId }),
+      
+      // Address verileri
+      Address.deleteMany({ userId: userId }),
+      
+      // Wallet verileri (companyId ile)
+      Wallet.deleteMany({ companyId: userId }),
+      WalletTransaction.deleteMany({ companyId: userId }),
+      WithdrawalRequest.deleteMany({ companyId: userId }),
+      
+      // Points verileri (userId ile)
+      Points.deleteMany({ userId: userId }),
+      PointsTransaction.deleteMany({ userId: userId }),
+      
+      // PaymentMethod verileri
+      PaymentMethod.deleteMany({ userId: userId }),
+      
+      // QuickAppointment verileri
+      QuickAppointment.deleteMany({ companyId: userId }),
+    ]);
+
+    // Employee ise, companyId'ye bağlı olanları da kontrol et
+    if (user.userType === 'employee' && user.companyId) {
+      // Employee silindiğinde, company'nin activeStoreIds'den bu employee'yi kaldır
+      await User.updateMany(
+        { _id: user.companyId },
+        { $pull: { activeStoreIds: userId } }
+      );
+    }
+
+    // Company ise, employee'lerin companyId'sini null yap veya sil
+    if (user.userType === 'company') {
+      await User.updateMany(
+        { companyId: userId },
+        { $unset: { companyId: '' } }
+      );
+    }
+
+    // Son olarak kullanıcıyı sil
+    await User.findByIdAndDelete(userId);
+
     res.status(200).json({
       success: true,
-      message: 'Kullanıcı başarıyla silindi',
+      message: 'Hesap ve tüm ilgili veriler başarıyla silindi',
     });
   } catch (error) {
+    console.error('deleteUser error:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || 'Hesap silinirken bir hata oluştu',
     });
   }
 };

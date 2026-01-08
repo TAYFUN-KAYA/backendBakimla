@@ -26,9 +26,12 @@ router.post('/employee', companyMiddleware, createEmployee);
 router.put('/profile', authMiddleware, updateProfile);
 router.put('/notification-preferences', authMiddleware, updateNotificationPreferences);
 router.put('/password', authMiddleware, updatePassword);
+// Kullanıcı kendi hesabını silebilir (req.user._id kullanılır) - /:id'den önce olmalı
+router.delete('/account', authMiddleware, deleteUser);
 router.put('/:id/userType', authMiddleware, updateUserType);
 router.put('/:id', authMiddleware, updateUser);
 router.get('/:id/stats', companyMiddleware, getEmployeeStats);
+// Admin veya başka kullanıcıları silmek için (req.params.id kullanılır)
 router.delete('/:id', authMiddleware, deleteUser);
 
 module.exports = router;

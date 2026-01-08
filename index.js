@@ -26,6 +26,7 @@ const invoiceRoutes = require('./routes/invoiceRoutes');
 const paymentMethodRoutes = require('./routes/paymentMethodRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
+const businessHomeAdRoutes = require('./routes/businessHomeAdRoutes');
 
 connectDB();
 
@@ -66,6 +67,7 @@ app.use('/api/invoices', invoiceRoutes);
 app.use('/api/payment-methods', paymentMethodRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/services', serviceRoutes);
+app.use('/api/business-home-ads', businessHomeAdRoutes);
 
 app.get('/', (req, res) => {
   res.json({
