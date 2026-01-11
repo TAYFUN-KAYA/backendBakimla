@@ -10,7 +10,7 @@ const { sendOTP } = require('../utils/smsService');
  */
 const sendOTPCode = async (req, res) => {
   try {
-    const { phoneNumber, purpose } = req.body; // purpose: 'register' veya 'login'
+    const { phoneNumber, purpose, userType } = req.body; // purpose: 'register' veya 'login', userType: 'user', 'company', 'employee'
 
     if (!phoneNumber || !purpose) {
       return res.status(400).json({
@@ -28,35 +28,41 @@ const sendOTPCode = async (req, res) => {
 
     // Admin login için telefon numarası kontrolü
     if (purpose === 'admin-login') {
-      const user = await User.findOne({ phoneNumber });
+      const user = await User.findOne({ phoneNumber, userType: 'admin' });
       if (!user) {
         return res.status(404).json({
           success: false,
           message: 'Kullanıcı bulunamadı',
         });
       }
-      if (user.userType !== 'admin') {
-        return res.status(403).json({
-          success: false,
-          message: 'Bu panele erişim için admin yetkisi gereklidir',
-        });
-      }
     }
 
-    // Kayıt için telefon numarası kontrolü
+    // Kayıt için telefon numarası kontrolü - belirli userType için
     if (purpose === 'register') {
-      const existingUser = await User.findOne({ phoneNumber });
+      if (!userType) {
+        return res.status(400).json({
+          success: false,
+          message: 'Kayıt için userType zorunludur',
+        });
+      }
+      const existingUser = await User.findOne({ phoneNumber, userType });
       if (existingUser) {
         return res.status(400).json({
           success: false,
-          message: 'Bu telefon numarası zaten kayıtlı',
+          message: `Bu telefon numarası ${userType} tipinde zaten kayıtlı`,
         });
       }
     }
 
-    // Giriş veya şifre sıfırlama için kullanıcı kontrolü
+    // Giriş veya şifre sıfırlama için kullanıcı kontrolü - belirli userType için
     if (purpose === 'login' || purpose === 'reset-password') {
-      const user = await User.findOne({ phoneNumber });
+      if (!userType) {
+        return res.status(400).json({
+          success: false,
+          message: 'Giriş için userType zorunludur',
+        });
+      }
+      const user = await User.findOne({ phoneNumber, userType });
       if (!user) {
         return res.status(404).json({
           success: false,
@@ -143,7 +149,7 @@ const sendOTPCode = async (req, res) => {
  */
 const verifyOTP = async (req, res) => {
   try {
-    const { phoneNumber, code, purpose, userData } = req.body;
+    const { phoneNumber, code, purpose, userData, userType } = req.body;
 
     if (!phoneNumber || !code || !purpose) {
       return res.status(400).json({
@@ -228,14 +234,26 @@ const verifyOTP = async (req, res) => {
         }
       }
 
-      const existingUser = await User.findOne({
-        $or: [{ email }, { phoneNumber }],
+      // Aynı telefon+userType kombinasyonunu kontrol et
+      const existingUserByPhone = await User.findOne({
+        phoneNumber,
+        userType,
       });
 
-      if (existingUser) {
+      if (existingUserByPhone) {
         return res.status(400).json({
           success: false,
-          message: 'Bu e-posta veya telefon numarası zaten kullanılıyor',
+          message: `Bu telefon numarası ${userType} tipinde zaten kayıtlı`,
+        });
+      }
+
+      // Email kontrolü (email unique olarak kalıyor)
+      const existingUserByEmail = await User.findOne({ email });
+
+      if (existingUserByEmail) {
+        return res.status(400).json({
+          success: false,
+          message: 'Bu e-posta adresi zaten kullanılıyor',
         });
       }
 
@@ -263,8 +281,15 @@ const verifyOTP = async (req, res) => {
         },
       });
     } else if (purpose === 'login') {
-      // Giriş işlemi
-      const user = await User.findOne({ phoneNumber });
+      // Giriş işlemi - belirli userType için
+      if (!userType) {
+        return res.status(400).json({
+          success: false,
+          message: 'Giriş için userType zorunludur',
+        });
+      }
+
+      const user = await User.findOne({ phoneNumber, userType });
 
       if (!user) {
         return res.status(404).json({
@@ -324,7 +349,7 @@ const verifyOTP = async (req, res) => {
       });
     }
     else if (purpose === 'reset-password') {
-      // Şifre sıfırlama işlemi
+      // Şifre sıfırlama işlemi - belirli userType için
       const { password } = userData || {};
 
       if (!password) {
@@ -334,7 +359,14 @@ const verifyOTP = async (req, res) => {
         });
       }
 
-      const user = await User.findOne({ phoneNumber });
+      if (!userType) {
+        return res.status(400).json({
+          success: false,
+          message: 'Şifre sıfırlama için userType zorunludur',
+        });
+      }
+
+      const user = await User.findOne({ phoneNumber, userType });
       if (!user) {
         return res.status(404).json({
           success: false,
@@ -509,11 +541,12 @@ const login = async (req, res) => {
 
 /**
  * checkUserByPhone
- * Telefon numarasına göre kullanıcı bilgisini kontrol et (userType kontrolü için)
+ * Telefon numarasına göre belirli userType'taki kullanıcı bilgisini kontrol et
  */
 const checkUserByPhone = async (req, res) => {
   try {
     const { phoneNumber } = req.params;
+    const { userType } = req.query; // Query parameter olarak userType
 
     if (!phoneNumber) {
       return res.status(400).json({
@@ -522,7 +555,15 @@ const checkUserByPhone = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ phoneNumber }).select('userType firstName lastName');
+    if (!userType) {
+      return res.status(400).json({
+        success: false,
+        message: 'userType parametresi zorunludur',
+      });
+    }
+
+    // Belirli userType'taki kullanıcıyı bul
+    const user = await User.findOne({ phoneNumber, userType }).select('userType firstName lastName');
 
     if (!user) {
       return res.status(200).json({

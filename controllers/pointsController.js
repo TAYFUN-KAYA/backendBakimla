@@ -38,25 +38,62 @@ const getPoints = async (req, res) => {
 /**
  * getPointsTransactions
  * Puan işlem geçmişini getir
+ * paymentMethod parametresi: 'card' (card), 'cash' (cash, iban), null (tümü)
  */
 const getPointsTransactions = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { page = 1, limit = 20, type } = req.query;
+    const { page = 1, limit = 20, type, paymentMethod } = req.query;
 
     const query = { userId };
     if (type) {
       query.type = type;
     }
 
-    const transactions = await PointsTransaction.find(query)
-      .populate('appointmentId', 'appointmentDate servicePrice')
-      .populate('orderId', 'orderNumber total')
+    let transactions = await PointsTransaction.find(query)
+      .populate('appointmentId', 'appointmentDate servicePrice paymentMethod')
+      .populate('orderId', 'orderNumber total paymentMethod')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    const total = await PointsTransaction.countDocuments(query);
+    // Payment method'a göre filtrele
+    if (paymentMethod === 'card') {
+      // Kredi kartı ödemeleri: card payment method'u olanlar
+      transactions = transactions.filter(t => {
+        const pm = t.appointmentId?.paymentMethod || t.orderId?.paymentMethod;
+        return pm === 'card';
+      });
+    } else if (paymentMethod === 'cash') {
+      // Nakit ve IBAN ödemeleri: cash veya iban payment method'u olanlar
+      transactions = transactions.filter(t => {
+        const pm = t.appointmentId?.paymentMethod || t.orderId?.paymentMethod;
+        return pm === 'cash' || pm === 'iban';
+      });
+    }
+
+    // Total count için aynı filtrelemeyi yap
+    let totalQuery = { userId };
+    if (type) {
+      totalQuery.type = type;
+    }
+    let totalTransactions = await PointsTransaction.find(totalQuery)
+      .populate('appointmentId', 'paymentMethod')
+      .populate('orderId', 'paymentMethod');
+    
+    if (paymentMethod === 'card') {
+      totalTransactions = totalTransactions.filter(t => {
+        const pm = t.appointmentId?.paymentMethod || t.orderId?.paymentMethod;
+        return pm === 'card';
+      });
+    } else if (paymentMethod === 'cash') {
+      totalTransactions = totalTransactions.filter(t => {
+        const pm = t.appointmentId?.paymentMethod || t.orderId?.paymentMethod;
+        return pm === 'cash' || pm === 'iban';
+      });
+    }
+
+    const total = totalTransactions.length;
 
     res.status(200).json({
       success: true,

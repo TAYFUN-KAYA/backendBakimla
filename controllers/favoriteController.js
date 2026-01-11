@@ -41,6 +41,21 @@ const addFavorite = async (req, res) => {
           message: 'İşletme bulunamadı',
         });
       }
+
+      // Favori işletme limiti kontrolü (max 5)
+      if (favoriteType === 'store') {
+        const storeFavoriteCount = await Favorite.countDocuments({
+          userId,
+          favoriteType: 'store',
+        });
+
+        if (storeFavoriteCount >= 5) {
+          return res.status(400).json({
+            success: false,
+            message: 'En fazla 5 favori işletme ekleyebilirsiniz',
+          });
+        }
+      }
     }
 
     if (productId) {
@@ -120,7 +135,7 @@ const getFavorites = async (req, res) => {
 
     const favorites = await Favorite.find(query)
       .populate('storeId', 'storeName appIcon sectors')
-      .populate('productId', 'name images price')
+      .populate('productId', 'name images price category')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);

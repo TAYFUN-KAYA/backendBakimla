@@ -75,6 +75,14 @@ const addressSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    latitude: {
+      type: Number,
+      // Konum bilgisi (opsiyonel)
+    },
+    longitude: {
+      type: Number,
+      // Konum bilgisi (opsiyonel)
+    },
   },
   {
     timestamps: true,

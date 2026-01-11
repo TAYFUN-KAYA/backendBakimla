@@ -391,19 +391,45 @@ const updateProfile = async (req, res) => {
 };
 
 /**
+ * getNotificationPreferences
+ * Kullanıcı bildirim tercihlerini getirir
+ */
+const getNotificationPreferences = async (req, res) => {
+  try {
+    const userId = req.user._id; // authMiddleware'den gelen user bilgisi
+
+    const user = await User.findById(userId).select('notificationPreferences');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Kullanıcı bulunamadı',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: user.notificationPreferences || {
+        appNotifications: false,
+        campaignNotifications: false,
+        appointmentReminders: true
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/**
  * updateNotificationPreferences
  * Kullanıcı bildirim tercihlerini günceller
  */
 const updateNotificationPreferences = async (req, res) => {
   try {
-    const { userId, appointmentReminder, campaignNotifications } = req.body;
-
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'userId gereklidir',
-      });
-    }
+    const userId = req.user._id; // authMiddleware'den gelen user bilgisi
+    const { appNotifications, campaignNotifications, appointmentReminders } = req.body;
 
     const user = await User.findById(userId);
     if (!user) {
@@ -415,12 +441,15 @@ const updateNotificationPreferences = async (req, res) => {
 
     const updateData = {
       notificationPreferences: {
-        appointmentReminder: appointmentReminder !== undefined
-          ? appointmentReminder
-          : (user.notificationPreferences?.appointmentReminder ?? true),
+        appNotifications: appNotifications !== undefined
+          ? appNotifications
+          : (user.notificationPreferences?.appNotifications ?? false),
         campaignNotifications: campaignNotifications !== undefined
           ? campaignNotifications
-          : (user.notificationPreferences?.campaignNotifications ?? true),
+          : (user.notificationPreferences?.campaignNotifications ?? false),
+        appointmentReminders: appointmentReminders !== undefined
+          ? appointmentReminders
+          : (user.notificationPreferences?.appointmentReminders ?? true),
       },
     };
 
@@ -432,7 +461,7 @@ const updateNotificationPreferences = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Bildirim tercihleri başarıyla güncellendi',
-      data: updatedUser,
+      data: updatedUser.notificationPreferences,
     });
   } catch (error) {
     res.status(400).json({
@@ -982,6 +1011,7 @@ module.exports = {
   updateUserType,
   updateUser,
   updateProfile,
+  getNotificationPreferences,
   updateNotificationPreferences,
   updatePassword,
   deleteUser,

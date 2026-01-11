@@ -1174,9 +1174,12 @@ const getStoresByCategory = async (req, res) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Sectors array'inde category key'ine sahip store'ları bul
+    // Sectors array'inde category key'ine sahip veya businessField'ı category'ye eşit olan store'ları bul
     const stores = await Store.find({
-      "sectors.key": category,
+      $or: [
+        { "sectors.key": category },
+        { businessField: category }
+      ],
       isOpen: true,
     })
       .populate(
@@ -1188,7 +1191,10 @@ const getStoresByCategory = async (req, res) => {
       .lean();
 
     const total = await Store.countDocuments({
-      "sectors.key": category,
+      $or: [
+        { "sectors.key": category },
+        { businessField: category }
+      ],
       isOpen: true,
     });
 
@@ -1226,9 +1232,12 @@ const getPopularStoresByCategory = async (req, res) => {
       });
     }
 
-    // Önce kategoriye göre store'ları bul
+    // Önce kategoriye göre store'ları bul (hem sectors.key hem de businessField'a göre)
     const stores = await Store.find({
-      "sectors.key": category,
+      $or: [
+        { "sectors.key": category },
+        { businessField: category }
+      ],
       isOpen: true,
     })
       .populate(

@@ -8,6 +8,9 @@ const {
   deleteCampaign,
   getCosmeticStorePromos,
 } = require('../controllers/campaignController');
+const {
+  getUserCampaigns,
+} = require('../controllers/userCampaignController');
 const { companyMiddleware, authMiddleware } = require('../middleware/authMiddleware');
 
 // ✅ authMiddleware kullan (token-based authentication)
@@ -18,6 +21,7 @@ router.get('/active', getActiveCampaigns);
 // Bu route public olmalı (userType: 'user' için erişilebilir)
 router.get('/cosmetic-store-promos', getCosmeticStorePromos);
 router.post('/company', authMiddleware, getCompanyCampaigns);
+router.get('/user/my-campaigns', authMiddleware, getUserCampaigns);
 router.put('/:id', authMiddleware, updateCampaign);
 router.delete('/:id', authMiddleware, deleteCampaign);
 

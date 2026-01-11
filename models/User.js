@@ -29,7 +29,6 @@ const userSchema = new mongoose.Schema(
     phoneNumber: {
       type: String,
       required: [true, 'Telefon numarası zorunludur'],
-      unique: true,
       trim: true,
       match: [/^[0-9]{10,15}$/, 'Geçerli bir telefon numarası giriniz'],
     },
@@ -89,11 +88,15 @@ const userSchema = new mongoose.Schema(
       // Each new store created is automatically added to this array
     },
     notificationPreferences: {
-      appointmentReminder: {
+      appNotifications: {
         type: Boolean,
-        default: true,
+        default: false,
       },
       campaignNotifications: {
+        type: Boolean,
+        default: false,
+      },
+      appointmentReminders: {
         type: Boolean,
         default: true,
       },
@@ -126,11 +129,20 @@ const userSchema = new mongoose.Schema(
       // Position key: 'kuaför', 'estetisyen_doktor', 'masör', 'güzellik_uzmanı', 'tırnakçı'
       // Enum şimdilik kaldırıldı - constants dosyasından yönetiliyor
     },
+    iyzicoCardUserKey: {
+      type: String,
+      trim: true,
+      // İyzico'da kullanıcıya ait kartları listelemek için kullanılan key
+    },
   },
   {
     timestamps: true,
   }
 );
+
+// Compound unique index: Aynı telefon numarası farklı userType'larda olabilir
+// ama aynı telefon+userType kombinasyonu unique olmalı
+userSchema.index({ phoneNumber: 1, userType: 1 }, { unique: true });
 
 // Şifre hash'leme - sadece şifre değiştiğinde
 userSchema.pre('save', async function (next) {

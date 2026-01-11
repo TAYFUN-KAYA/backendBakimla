@@ -27,6 +27,9 @@ const paymentMethodRoutes = require('./routes/paymentMethodRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const businessHomeAdRoutes = require('./routes/businessHomeAdRoutes');
+const clientHomeAdRoutes = require('./routes/clientHomeAdRoutes');
+const clientCenterAdRoutes = require('./routes/clientCenterAdRoutes');
+const searchRoutes = require('./routes/searchRoutes');
 
 connectDB();
 
@@ -68,6 +71,9 @@ app.use('/api/payment-methods', paymentMethodRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/business-home-ads', businessHomeAdRoutes);
+app.use('/api/client-home-ads', clientHomeAdRoutes);
+app.use('/api/client-center-ads', clientCenterAdRoutes);
+app.use('/api/search', searchRoutes);
 
 app.get('/', (req, res) => {
   res.json({

@@ -9,6 +9,7 @@ const {
   updateUserType,
   updateUser,
   updateProfile,
+  getNotificationPreferences,
   updateNotificationPreferences,
   updatePassword,
   deleteUser,
@@ -20,11 +21,13 @@ const { authMiddleware, companyMiddleware } = require('../middleware/authMiddlew
 router.get('/', getAllUsers);
 router.get('/employees', authMiddleware, getAllEmployees); // authMiddleware ekledik - token'dan user bilgisi almak için
 router.get('/dashboard', authMiddleware, getDashboard); // Dashboard endpoint
+// notification-preferences route'u :id route'undan önce olmalı
+router.get('/notification-preferences', authMiddleware, getNotificationPreferences);
+router.put('/notification-preferences', authMiddleware, updateNotificationPreferences);
 router.get('/:id', getUserById);
 router.post('/', createUser);
 router.post('/employee', companyMiddleware, createEmployee);
 router.put('/profile', authMiddleware, updateProfile);
-router.put('/notification-preferences', authMiddleware, updateNotificationPreferences);
 router.put('/password', authMiddleware, updatePassword);
 // Kullanıcı kendi hesabını silebilir (req.user._id kullanılır) - /:id'den önce olmalı
 router.delete('/account', authMiddleware, deleteUser);
