@@ -5,6 +5,7 @@ const Store = require('../models/Store');
 const Coupon = require('../models/Coupon');
 const Campaign = require('../models/Campaign');
 const { usePoints, addPoints } = require('./pointsController');
+const { APPOINTMENT, mapAppointmentToAccounting, getAppointmentPaymentLabel } = require('../constants/paymentMethods');
 
 /**
  * createAppointment
@@ -49,10 +50,10 @@ const createAppointment = async (req, res) => {
       });
     }
 
-    if (!['cash', 'card'].includes(paymentMethod)) {
+    if (!APPOINTMENT.VALUES.includes(paymentMethod)) {
       return res.status(400).json({
         success: false,
-        message: 'Ödeme tipi "cash" veya "card" olmalıdır',
+        message: `Ödeme tipi "${APPOINTMENT.CASH}" veya "${APPOINTMENT.CARD}" olmalıdır`,
       });
     }
 
@@ -662,8 +663,8 @@ const updateAppointment = async (req, res) => {
       const finalAppointment = await Appointment.findById(id);
       
       if (finalAppointment && finalAppointment.paymentReceived) {
-        const paymentMethod = finalAppointment.paymentMethod || 'cash';
-        const isOnlinePayment = paymentMethod === 'card' || paymentMethod === 'online';
+        const paymentMethod = finalAppointment.paymentMethod || APPOINTMENT.CASH;
+        const isOnlinePayment = APPOINTMENT.isCard(paymentMethod);
         
         // Online ödeme varsa wallet'a para ekle (eğer daha önce eklenmemişse)
         if (isOnlinePayment && finalAppointment.companyId) {
@@ -738,7 +739,7 @@ const updateAppointment = async (req, res) => {
               expense: 0,
               description: `Randevu ödemesi - ${finalAppointment.serviceType || 'Hizmet'}`,
               category: finalAppointment.serviceType || finalAppointment.serviceCategory || 'Randevu',
-              paymentMethod: paymentMethod === 'cash' ? 'nakit' : paymentMethod === 'iban' ? 'iban' : paymentMethod === 'card' ? 'online' : 'nakit',
+              paymentMethod: mapAppointmentToAccounting(paymentMethod),
             };
             
             await Accounting.create(accountingData);
@@ -872,9 +873,7 @@ const getAppointmentSummary = async (req, res) => {
       services: appointment.services || [], // Services array
       payment: {
         method: appointment.paymentMethod,
-        methodText: appointment.paymentMethod === 'cash' ? 'Nakit' : 
-                    appointment.paymentMethod === 'iban' ? 'IBAN' : 
-                    appointment.paymentMethod === 'card' ? 'Kredi Kartı' : 'Belirtilmemiş',
+        methodText: getAppointmentPaymentLabel(appointment.paymentMethod),
       },
       paymentMethod: appointment.paymentMethod,
       notes: appointment.notes,
@@ -963,7 +962,7 @@ const cancelAppointment = async (req, res) => {
     }
 
     // Online ödeme kontrolü - Eğer ödeme online (card) yapılmışsa wallet'tan para çek
-    const isOnlinePayment = appointment.paymentMethod === 'card' || appointment.paymentMethod === 'online';
+    const isOnlinePayment = APPOINTMENT.isCard(appointment.paymentMethod);
     
     if (isOnlinePayment && appointment.paymentReceived && appointment.companyId) {
       // Payment kaydını bul
@@ -1047,10 +1046,10 @@ const createAppointmentFromClient = async (req, res) => {
       });
     }
 
-    if (!['cash', 'card'].includes(paymentMethod)) {
+    if (!APPOINTMENT.VALUES.includes(paymentMethod)) {
       return res.status(400).json({
         success: false,
-        message: 'Ödeme tipi "cash" veya "card" olmalıdır',
+        message: `Ödeme tipi "${APPOINTMENT.CASH}" veya "${APPOINTMENT.CARD}" olmalıdır`,
       });
     }
 
@@ -1106,7 +1105,7 @@ const createAppointmentFromClient = async (req, res) => {
 
     // Hizmet fiyatlarını hesapla
     let totalServicePrice = 0;
-    const serviceCategory = services[0]?.serviceCategory || store.serviceCategory;
+    const serviceCategory = services[0]?.serviceCategory || store.serviceCategory || store.businessField || 'Güzellik';
 
     if (Array.isArray(services) && services.length > 0) {
       totalServicePrice = services.reduce((sum, service) => {
@@ -1204,12 +1203,13 @@ const createAppointmentFromClient = async (req, res) => {
       campaignId: campaignId || undefined,
       status: 'pending',
       isApproved: false,
-      paymentReceived: paymentMethod === 'cash' ? false : false,
+      paymentReceived: paymentMethod === APPOINTMENT.CASH ? false : false,
       notes,
     });
 
     // Nakit ödeme ise direkt onaylanmış sayılır
-    if (paymentMethod === 'cash') {
+    // NOT: Nakit ödeme için puan eklenmez (sadece kart ödemesi için puan eklenir)
+    if (paymentMethod === APPOINTMENT.CASH) {
       appointment.status = 'approved';
       appointment.isApproved = true;
       await appointment.save();
@@ -1225,7 +1225,7 @@ const createAppointmentFromClient = async (req, res) => {
       success: true,
       message: 'Randevu başarıyla oluşturuldu',
       data: populatedAppointment,
-      requiresPayment: paymentMethod === 'card',
+      requiresPayment: paymentMethod === APPOINTMENT.CARD,
     });
   } catch (error) {
     console.error('Create Appointment From Client Error:', error);
@@ -1273,10 +1273,25 @@ const getClientAppointments = async (req, res) => {
       .populate('campaignId', 'title discountValue')
       .sort({ appointmentDate: -1, appointmentTime: -1 });
 
+    // Her randevu için companyId'ye ait store'u bul
+    const appointmentsWithStore = await Promise.all(
+      appointments.map(async (appointment) => {
+        const appointmentObj = appointment.toObject();
+        if (appointment.companyId?._id) {
+          const store = await Store.findOne({ companyId: appointment.companyId._id }).select('_id storeName services');
+          if (store) {
+            appointmentObj.storeId = store._id;
+            appointmentObj.storeServices = store.services || [];
+          }
+        }
+        return appointmentObj;
+      })
+    );
+
     res.status(200).json({
       success: true,
-      count: appointments.length,
-      data: appointments,
+      count: appointmentsWithStore.length,
+      data: appointmentsWithStore,
     });
   } catch (error) {
     console.error('Get Client Appointments Error:', error);
@@ -1323,6 +1338,69 @@ const getBusyDates = async (req, res) => {
   }
 };
 
+/**
+ * Get appointments for a specific store by date range
+ * Public endpoint - no auth required (for checking available hours)
+ */
+const getStoreAppointmentsByDateRange = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const { startDate, endDate } = req.query;
+
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'storeId gereklidir',
+      });
+    }
+
+    // Find store and get companyId
+    const store = await Store.findById(storeId);
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'İşletme bulunamadı',
+      });
+    }
+
+    const companyId = store.companyId?._id || store.companyId;
+    const query = { companyId };
+
+    // Only get active appointments (not cancelled)
+    query.status = { $nin: ['cancelled'] };
+
+    if (startDate || endDate) {
+      query.appointmentDate = {};
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        query.appointmentDate.$gte = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.appointmentDate.$lte = end;
+      }
+    }
+
+    const appointments = await Appointment.find(query)
+      .select('appointmentDate appointmentTime status')
+      .sort({ appointmentDate: 1, appointmentTime: 1 });
+
+    res.status(200).json({
+      success: true,
+      count: appointments.length,
+      data: appointments,
+    });
+  } catch (error) {
+    console.error('getStoreAppointmentsByDateRange error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createAppointment,
   createAppointmentFromClient,
@@ -1334,5 +1412,6 @@ module.exports = {
   deleteAppointment,
   cancelAppointment,
   getBusyDates,
+  getStoreAppointmentsByDateRange,
 };
 

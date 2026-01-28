@@ -1,46 +1,30 @@
 const express = require('express');
 const router = express.Router();
-const {
-  initializePayment,
-  paymentCallback,
-  getPaymentStatus,
-  getPayments,
-  cancelPayment,
-  sendPaymentLinkViaSMS,
-  createPayment,
-  createPaymentLink,
-  iyzicoWebhook,
-} = require('../controllers/paymentController');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const {
+  getSavedCards,
+  saveCard,
+  deleteCard,
+  processPayment,
+  getInstallmentInfo
+} = require('../controllers/paymentController');
 
-// Ödeme başlatma
-router.post('/initialize', authMiddleware, initializePayment);
+// Get installment info (doesn't require auth for flexibility)
+router.post('/installments', getInstallmentInfo);
 
-// Nakit veya IBAN ödemesi için direkt payment kaydı oluştur
-router.post('/create', authMiddleware, createPayment);
+// All other routes require authentication
+router.use(authMiddleware);
 
-// iyzico callback (authenticate gerekmez, iyzico'dan gelir)
-// Hem GET hem POST destekle (iyzico farklı şekillerde gönderebilir)
-router.post('/callback', paymentCallback);
-router.get('/callback', paymentCallback);
+// Get user's saved cards
+router.get('/cards', getSavedCards);
 
-// Şirkete ait ödemeleri listele (daha spesifik route önce gelmeli)
-router.get('/company/:companyId', authMiddleware, getPayments);
+// Save a new card
+router.post('/cards', saveCard);
 
-// Ödeme durumu sorgulama
-router.get('/:paymentId', authMiddleware, getPaymentStatus);
+// Delete a saved card
+router.delete('/cards/:cardToken', deleteCard);
 
-// Ödeme iptal
-router.post('/:paymentId/cancel', authMiddleware, cancelPayment);
-
-// Ödeme linkini SMS ile gönder
-router.post('/send-link-sms', authMiddleware, sendPaymentLinkViaSMS);
-
-// Iyzico payment link oluştur (SMS ile gönderilecek)
-router.post('/create-link', authMiddleware, createPaymentLink);
-
-// Iyzico webhook (authenticate gerekmez, Iyzico'dan gelir)
-router.post('/iyzico/webhook', iyzicoWebhook);
+// Process payment
+router.post('/process', processPayment);
 
 module.exports = router;
-

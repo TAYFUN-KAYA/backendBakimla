@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '../services/adminService';
-import { UserCheck, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { UserCheck, CheckCircle, XCircle, Clock, Search } from 'lucide-react';
 import { format } from 'date-fns';
 
 
@@ -11,16 +11,19 @@ export default function Employees() {
   const [totalPages, setTotalPages] = useState(1);
   const [isApproved, setIsApproved] = useState('');
   const [processingId, setProcessingId] = useState(null);
+  const [search, setSearch] = useState('');
 
+  useEffect(() => { setPage(1); }, [search]);
   useEffect(() => {
     fetchEmployees();
-  }, [page, isApproved]);
+  }, [page, isApproved, search]);
 
   const fetchEmployees = async () => {
     setLoading(true);
     try {
       const params = { page, limit: 20 };
       if (isApproved) params.isApproved = isApproved;
+      if (search.trim()) params.search = search.trim();
 
       const response = await adminService.getAllEmployees(params);
       if (response.data.success) {
@@ -67,17 +70,29 @@ export default function Employees() {
         <h1 className="text-3xl font-bold text-gray-800">Çalışanlar</h1>
       </div>
 
-      {/* Filter */}
+      {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <select
-          value={isApproved}
-          onChange={(e) => setIsApproved(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-        >
-          <option value="">Tüm Çalışanlar</option>
-          <option value="true">Onaylı</option>
-          <option value="false">Onay Bekleyen</option>
-        </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Ad, e-posta veya telefon ile ara..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <select
+            value={isApproved}
+            onChange={(e) => setIsApproved(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">Tüm Çalışanlar</option>
+            <option value="true">Onaylı</option>
+            <option value="false">Onay Bekleyen</option>
+          </select>
+        </div>
       </div>
 
       {/* Table */}

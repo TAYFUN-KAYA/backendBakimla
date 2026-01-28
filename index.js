@@ -21,7 +21,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const pointsRoutes = require('./routes/pointsRoutes');
 const favoriteRoutes = require('./routes/favoriteRoutes');
-const cartRoutes = require('./routes/cartRoutes');
+const basketRoutes = require('./routes/basketRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const paymentMethodRoutes = require('./routes/paymentMethodRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
@@ -30,6 +30,8 @@ const businessHomeAdRoutes = require('./routes/businessHomeAdRoutes');
 const clientHomeAdRoutes = require('./routes/clientHomeAdRoutes');
 const clientCenterAdRoutes = require('./routes/clientCenterAdRoutes');
 const searchRoutes = require('./routes/searchRoutes');
+const bakimlaStoreCouponRoutes = require('./routes/bakimlaStoreCouponRoutes');
+const userFavoriteStoreRoutes = require('./routes/userFavoriteStoreRoutes');
 
 connectDB();
 
@@ -65,7 +67,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/points', pointsRoutes);
 app.use('/api/favorites', favoriteRoutes);
-app.use('/api/cart', cartRoutes);
+app.use('/api/basket', basketRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/payment-methods', paymentMethodRoutes);
 app.use('/api/upload', uploadRoutes);
@@ -74,6 +76,8 @@ app.use('/api/business-home-ads', businessHomeAdRoutes);
 app.use('/api/client-home-ads', clientHomeAdRoutes);
 app.use('/api/client-center-ads', clientCenterAdRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/bakimla-store-coupons', bakimlaStoreCouponRoutes);
+app.use('/api/user-favorite-stores', userFavoriteStoreRoutes);
 
 app.get('/', (req, res) => {
   res.json({

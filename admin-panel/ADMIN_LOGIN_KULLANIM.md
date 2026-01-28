@@ -37,7 +37,7 @@ node scripts/createAdmin.js
 Veya parametrelerle:
 
 ```bash
-node scripts/createAdmin.js "Admin" "User" "admin@bakimla.com" "5551234567" "male" "Admin123!"
+node scripts/createAdmin.js "Admin" "User" "admin@bakimla.com" "5551234567" "male" "1234"
 ```
 
 **Parametreler:**
@@ -46,7 +46,7 @@ node scripts/createAdmin.js "Admin" "User" "admin@bakimla.com" "5551234567" "mal
 3. Email (varsayılan: "admin@bakimla.com")
 4. Telefon (varsayılan: "5551234567")
 5. Cinsiyet: male/female/other (varsayılan: "male")
-6. Şifre (varsayılan: "Admin123!")
+6. Şifre (varsayılan: "1234")
 
 ### Yöntem 2: MongoDB'den Manuel Oluşturma
 
@@ -68,7 +68,7 @@ MongoDB'de User koleksiyonuna şu şekilde bir doküman ekleyin:
 **Şifre Hash'leme:**
 ```javascript
 const bcrypt = require('bcrypt');
-const hashedPassword = await bcrypt.hash('Admin123!', 10);
+const hashedPassword = await bcrypt.hash('1234', 10);
 ```
 
 ### Yöntem 3: API ile Oluşturma (Gelecekte)
@@ -115,6 +115,7 @@ db.users.find({ userType: 'admin' })
 - Telefon numarası formatını kontrol edin (10 haneli olmalı)
 - SMS servisinin çalıştığından emin olun
 - Development modunda OTP kodu response'da dönebilir
+- **Geliştirme modu:** OTP olarak **001234** kullanabilirsiniz (şifre: 1234)
 
 ### Token Geçersiz Hatası
 

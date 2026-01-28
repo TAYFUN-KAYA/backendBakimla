@@ -6,6 +6,7 @@ const {
   validateCoupon,
   updateCoupon,
   deleteCoupon,
+  getStoreCoupons,
 } = require('../controllers/couponController');
 const {
   getUserCoupons,
@@ -23,6 +24,9 @@ router.delete('/:id', authMiddleware, deleteCoupon);
 // User coupon routes
 router.get('/user/my-coupons', authMiddleware, getUserCoupons);
 router.post('/user/add', authMiddleware, addUserCoupon);
+
+// Store coupons (public)
+router.get('/store/:storeId', getStoreCoupons);
 
 module.exports = router;
 

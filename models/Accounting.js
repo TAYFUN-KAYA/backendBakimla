@@ -15,6 +15,10 @@ const accountingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Appointment',
     },
+    orderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Order',
+    },
     date: {
       type: Date,
       required: [true, 'Tarih zorunludur'],

@@ -7,7 +7,7 @@ const User = require('../models/User');
  */
 const createProduct = async (req, res) => {
   try {
-    const { companyId, name, description, price, category, images, stock } = req.body;
+    const { companyId, name, description, price, category, images, stock, targetGender } = req.body;
 
     if (!companyId || !name || !price || !category) {
       return res.status(400).json({
@@ -32,6 +32,7 @@ const createProduct = async (req, res) => {
       category,
       images: images || [],
       stock: stock || 0,
+      targetGender: ['man', 'woman', 'mix'].includes(targetGender) ? targetGender : 'mix',
     });
 
     res.status(201).json({
@@ -53,16 +54,30 @@ const createProduct = async (req, res) => {
  */
 const getAllProducts = async (req, res) => {
   try {
-    const { companyId, category, minPrice, maxPrice } = req.query;
+    const { companyId, category, minPrice, maxPrice, targetGender } = req.query;
 
     const query = { isPublished: true, isActive: true };
 
+    // Kozmetik mağaza: sadece companyId'siz (admin) ürünler. companyId parametre gelirse o işletmenin ürünleri.
     if (companyId) {
       query.companyId = companyId;
+    } else {
+      query.companyId = null;
     }
 
     if (category) {
       query.category = category;
+    }
+
+    // targetGender: woman -> woman+mix, man -> man+mix, mix -> sadece mix
+    if (targetGender) {
+      if (targetGender === 'woman') {
+        query.targetGender = { $in: ['woman', 'mix'] };
+      } else if (targetGender === 'man') {
+        query.targetGender = { $in: ['man', 'mix'] };
+      } else if (targetGender === 'mix') {
+        query.targetGender = 'mix';
+      }
     }
 
     if (minPrice || maxPrice) {
@@ -110,12 +125,16 @@ const filterProducts = async (req, res) => {
       sortOrder,
       page,
       limit,
+      targetGender,
     } = req.body;
 
     const query = { isPublished: true, isActive: true };
 
+    // Kozmetik mağaza: sadece companyId'siz (admin) ürünler.
     if (companyId) {
       query.companyId = companyId;
+    } else {
+      query.companyId = null;
     }
 
     if (category) {
@@ -123,6 +142,17 @@ const filterProducts = async (req, res) => {
         query.category = { $in: category };
       } else {
         query.category = category;
+      }
+    }
+
+    // targetGender: woman -> woman+mix, man -> man+mix, mix -> sadece mix
+    if (targetGender) {
+      if (targetGender === 'woman') {
+        query.targetGender = { $in: ['woman', 'mix'] };
+      } else if (targetGender === 'man') {
+        query.targetGender = { $in: ['man', 'mix'] };
+      } else if (targetGender === 'mix') {
+        query.targetGender = 'mix';
       }
     }
 
@@ -331,7 +361,7 @@ const deleteProduct = async (req, res) => {
  */
 const getCategories = async (req, res) => {
   try {
-    const { gender } = req.query; // 'kadin' veya 'erkek' filtresi için
+    const { targetGender } = req.query; // 'man', 'woman' veya 'mix' filtresi
 
     // Product modelinin var olduğundan emin ol
     if (!Product) {
@@ -343,12 +373,21 @@ const getCategories = async (req, res) => {
       });
     }
 
-    const query = { isPublished: true, isActive: true };
-    
-    // Gender filtresi varsa (gelecekte category'ye göre filtreleme yapılabilir)
-    // Şimdilik tüm kategorileri getir
+    // Kozmetik mağaza: sadece companyId'siz (admin) ürünler
+    query.companyId = null;
 
-    // Önce tüm ürünleri getir, sonra JavaScript'te grupla (daha güvenli)
+    // targetGender filtresi: woman -> woman+mix, man -> man+mix, mix -> sadece mix
+    if (targetGender) {
+      if (targetGender === 'woman') {
+        query.targetGender = { $in: ['woman', 'mix'] };
+      } else if (targetGender === 'man') {
+        query.targetGender = { $in: ['man', 'mix'] };
+      } else if (targetGender === 'mix') {
+        query.targetGender = 'mix';
+      }
+    }
+
+    // Önce ürünleri getir, sonra JavaScript'te grupla
     let products = [];
     try {
       products = await Product.find(query).select('category images').lean().exec();

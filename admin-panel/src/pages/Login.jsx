@@ -116,7 +116,7 @@ export default function Login() {
                 {phoneNumber} numarasına gönderilen kodu girin
                 {import.meta.env.MODE === 'development' && (
                   <span className="block text-primary-600 font-medium mt-1">
-                    Geliştirme Modu: Magic Number "123456" kullanabilirsiniz.
+                    Geliştirme Modu: OTP olarak 001234 kullanabilirsiniz (şifre: 1234).
                   </span>
                 )}
               </p>

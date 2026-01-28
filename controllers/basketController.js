@@ -1,18 +1,18 @@
-const Cart = require('../models/Cart');
+const Basket = require('../models/Basket');
 const Product = require('../models/Product');
 
 /**
- * getCart
+ * getBasket
  * Sepeti getir
  */
-const getCart = async (req, res) => {
+const getBasket = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    let cart = await Cart.findOne({ userId }).populate('items.productId');
+    let basket = await Basket.findOne({ userId }).populate('items.productId');
 
-    if (!cart) {
-      cart = await Cart.create({
+    if (!basket) {
+      basket = await Basket.create({
         userId,
         items: [],
         subtotal: 0,
@@ -22,16 +22,15 @@ const getCart = async (req, res) => {
         total: 0,
       });
     } else {
-      // Sepet toplamını güncelle
-      await cart.calculateTotal();
+      await basket.calculateTotal();
     }
 
     res.status(200).json({
       success: true,
-      data: cart,
+      data: basket,
     });
   } catch (error) {
-    console.error('Get Cart Error:', error);
+    console.error('Get Basket Error:', error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -40,10 +39,10 @@ const getCart = async (req, res) => {
 };
 
 /**
- * addToCart
+ * addToBasket
  * Sepete ürün ekle
  */
-const addToCart = async (req, res) => {
+const addToBasket = async (req, res) => {
   try {
     const userId = req.user._id;
     const { productId, quantity = 1, options } = req.body;
@@ -55,18 +54,29 @@ const addToCart = async (req, res) => {
       });
     }
 
+    console.log('Adding to basket, productId:', productId);
+    
     const product = await Product.findById(productId);
-    if (!product || !product.isActive || !product.isPublished) {
+    console.log('Found product:', product ? product.name : 'NOT FOUND', 'isActive:', product?.isActive, 'isPublished:', product?.isPublished);
+    
+    if (!product) {
       return res.status(404).json({
         success: false,
-        message: 'Ürün bulunamadı veya aktif değil',
+        message: 'Ürün bulunamadı',
+      });
+    }
+    
+    if (!product.isActive || !product.isPublished) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bu ürün şu anda satışta değil',
       });
     }
 
-    let cart = await Cart.findOne({ userId });
+    let basket = await Basket.findOne({ userId });
 
-    if (!cart) {
-      cart = await Cart.create({
+    if (!basket) {
+      basket = await Basket.create({
         userId,
         items: [],
         subtotal: 0,
@@ -77,17 +87,14 @@ const addToCart = async (req, res) => {
       });
     }
 
-    // Ürün zaten sepette var mı kontrol et
-    const existingItemIndex = cart.items.findIndex(
+    const existingItemIndex = basket.items.findIndex(
       (item) => item.productId.toString() === productId.toString()
     );
 
     if (existingItemIndex > -1) {
-      // Miktarı güncelle
-      cart.items[existingItemIndex].quantity += quantity;
+      basket.items[existingItemIndex].quantity += quantity;
     } else {
-      // Yeni ürün ekle
-      cart.items.push({
+      basket.items.push({
         productId,
         quantity,
         options,
@@ -95,16 +102,18 @@ const addToCart = async (req, res) => {
       });
     }
 
-    await cart.calculateTotal();
-    await cart.save();
+    await basket.calculateTotal();
+    await basket.save();
+
+    await basket.populate('items.productId');
 
     res.status(200).json({
       success: true,
       message: 'Ürün sepete eklendi',
-      data: cart,
+      data: basket,
     });
   } catch (error) {
-    console.error('Add to Cart Error:', error);
+    console.error('Add to Basket Error:', error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -113,24 +122,24 @@ const addToCart = async (req, res) => {
 };
 
 /**
- * updateCartItem
+ * updateBasketItem
  * Sepet ürününü güncelle
  */
-const updateCartItem = async (req, res) => {
+const updateBasketItem = async (req, res) => {
   try {
     const userId = req.user._id;
     const { itemId } = req.params;
     const { quantity, options } = req.body;
 
-    const cart = await Cart.findOne({ userId });
-    if (!cart) {
+    const basket = await Basket.findOne({ userId });
+    if (!basket) {
       return res.status(404).json({
         success: false,
         message: 'Sepet bulunamadı',
       });
     }
 
-    const itemIndex = cart.items.findIndex(
+    const itemIndex = basket.items.findIndex(
       (item) => item._id.toString() === itemId
     );
 
@@ -143,27 +152,28 @@ const updateCartItem = async (req, res) => {
 
     if (quantity !== undefined) {
       if (quantity <= 0) {
-        // Ürünü sepetten çıkar
-        cart.items.splice(itemIndex, 1);
+        basket.items.splice(itemIndex, 1);
       } else {
-        cart.items[itemIndex].quantity = quantity;
+        basket.items[itemIndex].quantity = quantity;
       }
     }
 
     if (options !== undefined) {
-      cart.items[itemIndex].options = options;
+      basket.items[itemIndex].options = options;
     }
 
-    await cart.calculateTotal();
-    await cart.save();
+    await basket.calculateTotal();
+    await basket.save();
+
+    await basket.populate('items.productId');
 
     res.status(200).json({
       success: true,
       message: 'Sepet güncellendi',
-      data: cart,
+      data: basket,
     });
   } catch (error) {
-    console.error('Update Cart Item Error:', error);
+    console.error('Update Basket Item Error:', error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -172,36 +182,38 @@ const updateCartItem = async (req, res) => {
 };
 
 /**
- * removeFromCart
+ * removeFromBasket
  * Sepetten ürün çıkar
  */
-const removeFromCart = async (req, res) => {
+const removeFromBasket = async (req, res) => {
   try {
     const userId = req.user._id;
     const { itemId } = req.params;
 
-    const cart = await Cart.findOne({ userId });
-    if (!cart) {
+    const basket = await Basket.findOne({ userId });
+    if (!basket) {
       return res.status(404).json({
         success: false,
         message: 'Sepet bulunamadı',
       });
     }
 
-    cart.items = cart.items.filter(
+    basket.items = basket.items.filter(
       (item) => item._id.toString() !== itemId
     );
 
-    await cart.calculateTotal();
-    await cart.save();
+    await basket.calculateTotal();
+    await basket.save();
+
+    await basket.populate('items.productId');
 
     res.status(200).json({
       success: true,
       message: 'Ürün sepetten çıkarıldı',
-      data: cart,
+      data: basket,
     });
   } catch (error) {
-    console.error('Remove from Cart Error:', error);
+    console.error('Remove from Basket Error:', error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -210,37 +222,39 @@ const removeFromCart = async (req, res) => {
 };
 
 /**
- * clearCart
+ * clearBasket
  * Sepeti temizle
  */
-const clearCart = async (req, res) => {
+const clearBasket = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const cart = await Cart.findOne({ userId });
-    if (!cart) {
+    const basket = await Basket.findOne({ userId });
+    if (!basket) {
       return res.status(404).json({
         success: false,
         message: 'Sepet bulunamadı',
       });
     }
 
-    cart.items = [];
-    cart.subtotal = 0;
-    cart.discount = 0;
-    cart.pointsToUse = 0;
-    cart.shippingCost = 0;
-    cart.total = 0;
-    cart.couponId = undefined;
-    await cart.save();
+    basket.items = [];
+    basket.subtotal = 0;
+    basket.discount = 0;
+    basket.pointsToUse = 0;
+    basket.shippingCost = 0;
+    basket.total = 0;
+    basket.couponId = undefined;
+    await basket.save();
+
+    await basket.populate('items.productId');
 
     res.status(200).json({
       success: true,
       message: 'Sepet temizlendi',
-      data: cart,
+      data: basket,
     });
   } catch (error) {
-    console.error('Clear Cart Error:', error);
+    console.error('Clear Basket Error:', error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -249,10 +263,9 @@ const clearCart = async (req, res) => {
 };
 
 module.exports = {
-  getCart,
-  addToCart,
-  updateCartItem,
-  removeFromCart,
-  clearCart,
+  getBasket,
+  addToBasket,
+  updateBasketItem,
+  removeFromBasket,
+  clearBasket,
 };
-

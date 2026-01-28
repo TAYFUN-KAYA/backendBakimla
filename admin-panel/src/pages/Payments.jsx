@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '../services/adminService';
-import { CreditCard, CheckCircle, XCircle, Clock, RotateCcw } from 'lucide-react';
+import { CreditCard, CheckCircle, XCircle, Clock, RotateCcw, X, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 
@@ -12,16 +12,19 @@ export default function Payments() {
   const [totalPages, setTotalPages] = useState(1);
   const [paymentStatus, setPaymentStatus] = useState('');
   const [totalAmount, setTotalAmount] = useState(0);
+  const [search, setSearch] = useState('');
 
+  useEffect(() => { setPage(1); }, [search]);
   useEffect(() => {
     fetchPayments();
-  }, [page, paymentStatus]);
+  }, [page, paymentStatus, search]);
 
   const fetchPayments = async () => {
     setLoading(true);
     try {
       const params = { page, limit: 20 };
       if (paymentStatus) params.paymentStatus = paymentStatus;
+      if (search.trim()) params.search = search.trim();
 
       const response = await adminService.getAllPayments(params);
       if (response.data.success) {
@@ -36,18 +39,29 @@ export default function Payments() {
     }
   };
 
-  const handleRefund = async (paymentId) => {
+  const handleRefund = async (id) => {
     if (!window.confirm('Bu ödemeyi iade etmek istediğinize emin misiniz?')) return;
-
     try {
-      const response = await adminService.refundPayment(paymentId, { reason: 'Yönetici iadesi' });
-      if (response.data.success) {
+      const res = await adminService.refundPayment(id, { description: 'Yönetici iadesi' });
+      if (res.data?.success) {
         toast.success('İade işlemi başarılı');
         fetchPayments();
-      }
-    } catch (error) {
-      console.error('Refund error:', error);
-      toast.error(error.response?.data?.message || 'İade işlemi başarısız');
+      } else toast.error(res.data?.message || 'İade başarısız');
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'İade işlemi başarısız');
+    }
+  };
+
+  const handleCancel = async (id) => {
+    if (!window.confirm('Bu ödemeyi iptal etmek istediğinize emin misiniz?')) return;
+    try {
+      const res = await adminService.cancelPayment(id, { description: 'Yönetici iptali' });
+      if (res.data?.success) {
+        toast.success('İptal işlemi başarılı');
+        fetchPayments();
+      } else toast.error(res.data?.message || 'İptal başarısız');
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'İptal işlemi başarısız');
     }
   };
 
@@ -59,6 +73,8 @@ export default function Payments() {
         return <XCircle className="w-5 h-5 text-red-500" />;
       case 'refunded':
         return <RotateCcw className="w-5 h-5 text-blue-500" />;
+      case 'cancelled':
+        return <X className="w-5 h-5 text-gray-500" />;
       case 'pending':
         return <Clock className="w-5 h-5 text-yellow-500" />;
       default:
@@ -78,20 +94,32 @@ export default function Payments() {
         </div>
       </div>
 
-      {/* Filter */}
+      {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <select
-          value={paymentStatus}
-          onChange={(e) => setPaymentStatus(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-        >
-          <option value="">Tüm Durumlar</option>
-          <option value="success">Başarılı</option>
-          <option value="pending">Beklemede</option>
-          <option value="failed">Başarısız</option>
-          <option value="cancelled">İptal</option>
-          <option value="refunded">İade Edildi</option>
-        </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="İşletme / müşteri adı veya e-posta ile ara..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <select
+            value={paymentStatus}
+            onChange={(e) => setPaymentStatus(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">Tüm Durumlar</option>
+            <option value="success">Başarılı</option>
+            <option value="pending">Beklemede</option>
+            <option value="failed">Başarısız</option>
+            <option value="cancelled">İptal</option>
+            <option value="refunded">İade Edildi</option>
+          </select>
+        </div>
       </div>
 
       {/* Table */}
@@ -166,16 +194,28 @@ export default function Payments() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {payment.paymentStatus === 'success' && (
-                          <button
-                            onClick={() => handleRefund(payment._id)}
-                            className="text-blue-600 hover:text-blue-900 text-sm font-medium flex items-center justify-end ml-auto"
-                            title="İade Et"
-                          >
-                            <RotateCcw className="w-4 h-4 mr-1" />
-                            İade Et
-                          </button>
-                        )}
+                        <div className="flex items-center justify-end gap-2">
+                          {!['cancelled', 'refunded'].includes(payment.paymentStatus) && (
+                            <button
+                              onClick={() => handleCancel(payment._id)}
+                              className="text-amber-600 hover:text-amber-800 text-sm font-medium inline-flex items-center gap-1"
+                              title="İptal"
+                            >
+                              <X className="w-4 h-4" />
+                              İptal
+                            </button>
+                          )}
+                          {payment.paymentStatus === 'success' && (
+                            <button
+                              onClick={() => handleRefund(payment._id)}
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center gap-1"
+                              title="İade Et"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                              İade
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

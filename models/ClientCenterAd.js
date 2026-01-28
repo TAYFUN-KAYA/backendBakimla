@@ -2,16 +2,42 @@ const mongoose = require('mongoose');
 
 const clientCenterAdSchema = new mongoose.Schema(
   {
-    image: {
-      type: String,
-      required: [true, 'Reklam görseli zorunludur'],
-      trim: true,
-    },
     title: {
       type: String,
       trim: true,
     },
     subtitle: {
+      type: String,
+      trim: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+    },
+    discountPercent: {
+      type: Number,
+      min: [0, 'İndirim yüzdesi 0 veya daha büyük olmalıdır'],
+      max: [100, 'İndirim yüzdesi 100 veya daha küçük olmalıdır'],
+    },
+    quantity: {
+      type: Number,
+      default: 0,
+      min: [0, 'Adet 0 veya daha büyük olmalıdır'],
+    },
+    image: {
+      type: String,
+      required: [true, 'Reklam görseli zorunludur'],
+      trim: true,
+    },
+    productImage: {
       type: String,
       trim: true,
     },

@@ -1,45 +1,38 @@
 const mongoose = require('mongoose');
 
-/**
- * UserCoupon Model
- * Kullanıcının kazandığı/aldığı kuponlar
- */
-const userCouponSchema = new mongoose.Schema(
-  {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Kullanıcı ID zorunludur'],
-    },
-    couponId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Coupon',
-      required: [true, 'Kupon ID zorunludur'],
-    },
-    isUsed: {
-      type: Boolean,
-      default: false,
-    },
-    usedAt: {
-      type: Date,
-    },
-    orderId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Order',
-    },
-    obtainedAt: {
-      type: Date,
-      default: Date.now,
-    },
+const userCouponSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
-  {
-    timestamps: true,
+  couponId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Coupon',
+    required: true
+  },
+  storeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Store',
+    required: true
+  },
+  isUsed: {
+    type: Boolean,
+    default: false
+  },
+  usedAt: {
+    type: Date
+  },
+  appointmentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Appointment'
   }
-);
+}, {
+  timestamps: true
+});
 
+// Index for faster queries
 userCouponSchema.index({ userId: 1, isUsed: 1 });
-userCouponSchema.index({ userId: 1, createdAt: -1 });
 userCouponSchema.index({ couponId: 1 });
 
 module.exports = mongoose.model('UserCoupon', userCouponSchema);
-

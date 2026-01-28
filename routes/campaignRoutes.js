@@ -7,6 +7,7 @@ const {
   updateCampaign,
   deleteCampaign,
   getCosmeticStorePromos,
+  getStoreCampaigns,
 } = require('../controllers/campaignController');
 const {
   getUserCampaigns,
@@ -22,6 +23,7 @@ router.get('/active', getActiveCampaigns);
 router.get('/cosmetic-store-promos', getCosmeticStorePromos);
 router.post('/company', authMiddleware, getCompanyCampaigns);
 router.get('/user/my-campaigns', authMiddleware, getUserCampaigns);
+router.get('/store/:storeId', getStoreCampaigns); // İşletme kampanyaları (public)
 router.put('/:id', authMiddleware, updateCampaign);
 router.delete('/:id', authMiddleware, deleteCampaign);
 

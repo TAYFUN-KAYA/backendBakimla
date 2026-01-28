@@ -1,6 +1,7 @@
 const { Points, PointsTransaction } = require('../models/Points');
 const Appointment = require('../models/Appointment');
 const Order = require('../models/Order');
+const { APPOINTMENT, ACCOUNTING } = require('../constants/paymentMethods');
 
 /**
  * getPoints
@@ -58,17 +59,15 @@ const getPointsTransactions = async (req, res) => {
       .skip((page - 1) * limit);
 
     // Payment method'a göre filtrele
-    if (paymentMethod === 'card') {
-      // Kredi kartı ödemeleri: card payment method'u olanlar
+    if (paymentMethod === APPOINTMENT.CARD) {
       transactions = transactions.filter(t => {
         const pm = t.appointmentId?.paymentMethod || t.orderId?.paymentMethod;
-        return pm === 'card';
+        return pm === APPOINTMENT.CARD;
       });
-    } else if (paymentMethod === 'cash') {
-      // Nakit ve IBAN ödemeleri: cash veya iban payment method'u olanlar
+    } else if (paymentMethod === APPOINTMENT.CASH) {
       transactions = transactions.filter(t => {
         const pm = t.appointmentId?.paymentMethod || t.orderId?.paymentMethod;
-        return pm === 'cash' || pm === 'iban';
+        return pm === APPOINTMENT.CASH || pm === ACCOUNTING.IBAN;
       });
     }
 
@@ -81,15 +80,15 @@ const getPointsTransactions = async (req, res) => {
       .populate('appointmentId', 'paymentMethod')
       .populate('orderId', 'paymentMethod');
     
-    if (paymentMethod === 'card') {
+    if (paymentMethod === APPOINTMENT.CARD) {
       totalTransactions = totalTransactions.filter(t => {
         const pm = t.appointmentId?.paymentMethod || t.orderId?.paymentMethod;
-        return pm === 'card';
+        return pm === APPOINTMENT.CARD;
       });
-    } else if (paymentMethod === 'cash') {
+    } else if (paymentMethod === APPOINTMENT.CASH) {
       totalTransactions = totalTransactions.filter(t => {
         const pm = t.appointmentId?.paymentMethod || t.orderId?.paymentMethod;
-        return pm === 'cash' || pm === 'iban';
+        return pm === APPOINTMENT.CASH || pm === ACCOUNTING.IBAN;
       });
     }
 

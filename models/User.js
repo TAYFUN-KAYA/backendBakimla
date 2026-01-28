@@ -134,6 +134,12 @@ const userSchema = new mongoose.Schema(
       trim: true,
       // İyzico'da kullanıcıya ait kartları listelemek için kullanılan key
     },
+    points: {
+      type: Number,
+      default: 0,
+      min: 0,
+      // Bakımla puanları - kullanıcının kazandığı puanlar
+    },
   },
   {
     timestamps: true,

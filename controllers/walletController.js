@@ -293,6 +293,7 @@ const createWithdrawalRequest = async (req, res) => {
       bankName: bankName?.trim() || null,
       eftDescription: finalEftDescription,
       status: 'pending',
+      source: 'wallet',
     });
 
     res.status(201).json({

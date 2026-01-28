@@ -106,8 +106,10 @@ export default function Stores() {
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
                           {store.sectors?.slice(0, 2).map((sector, idx) => (
-                            <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                              {sector}
+                            <span key={sector?.id ?? sector?._id ?? idx} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                              {typeof sector === 'object' && sector !== null
+                                ? (sector.name || sector.key || '-')
+                                : String(sector ?? '')}
                             </span>
                           ))}
                           {store.sectors?.length > 2 && (

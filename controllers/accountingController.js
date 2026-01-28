@@ -1,5 +1,6 @@
 const Accounting = require('../models/Accounting');
 const User = require('../models/User');
+const { ACCOUNTING } = require('../constants/paymentMethods');
 
 /**
  * createAccountingRecord
@@ -56,7 +57,7 @@ const createAccountingRecord = async (req, res) => {
       expense: expense || 0,
       description,
       category,
-      paymentMethod: paymentMethod || 'nakit',
+      paymentMethod: paymentMethod || ACCOUNTING.NAKIT,
     });
 
     res.status(201).json({

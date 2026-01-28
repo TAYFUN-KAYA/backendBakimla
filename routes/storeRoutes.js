@@ -18,6 +18,7 @@ const {
   getQuickAppointments,
   createOrUpdateQuickAppointment,
   deleteQuickAppointment,
+  getStoreEmployees,
 } = require('../controllers/storeController');
 const { companyMiddleware, authMiddleware } = require('../middleware/authMiddleware');
 
@@ -41,9 +42,13 @@ router.get('/my-info', companyMiddleware, getMyStoreInfo);
 router.get('/company/:companyId/:storeId', getStoreByCompanyId);
 router.get('/company/:companyId', getStoreByCompanyId);
 router.put('/company', companyMiddleware, updateStoreByCompanyId);
-router.put('/:id', companyMiddleware, updateStore);
 
-// ⚠️ Dynamic :id route MUST be LAST to avoid conflicts
+// ⚠️ ALL SPECIFIC ROUTES BEFORE DYNAMIC :id/:storeId ROUTES
+// Get store employees (MUST be before :id route)
+router.get('/:storeId/employees', getStoreEmployees);
+
+// ⚠️ Dynamic routes with parameters MUST be LAST to avoid conflicts
+router.put('/:id', companyMiddleware, updateStore);
 router.get('/:id', getStoreDetails);
 
 module.exports = router;

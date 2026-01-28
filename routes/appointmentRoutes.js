@@ -11,6 +11,7 @@ const {
   deleteAppointment,
   cancelAppointment,
   getBusyDates,
+  getStoreAppointmentsByDateRange,
 } = require('../controllers/appointmentController');
 const { companyMiddleware, employeeMiddleware, authMiddleware } = require('../middleware/authMiddleware');
 
@@ -26,6 +27,7 @@ router.get('/client/list', authMiddleware, getClientAppointments);
 // Spesifik route'lar parametrik route'lardan ÖNCE olmalı
 router.get('/busy-dates', authMiddleware, getBusyDates); // companyMiddleware → authMiddleware
 router.get('/company', authMiddleware, getCompanyAppointments); // GET isteği, query parametreleri ile
+router.get('/store/:storeId/date-range', getStoreAppointmentsByDateRange); // Public endpoint for available hours
 router.get('/:id/summary', authMiddleware, getAppointmentSummary);
 router.post('/employee', authMiddleware, getEmployeeAppointments); // authMiddleware: hem company hem employee erişebilir
 router.put('/:id', companyMiddleware, updateAppointment);

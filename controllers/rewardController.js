@@ -2,6 +2,7 @@ const { Reward, RewardTransaction } = require('../models/Reward');
 const Appointment = require('../models/Appointment');
 const User = require('../models/User');
 const Store = require('../models/Store');
+const { APPOINTMENT } = require('../constants/paymentMethods');
 
 /**
  * getRewardStats
@@ -161,7 +162,7 @@ const processRewardOnCompletion = async (appointmentId) => {
         }
 
         const paymentMethod = appointment.paymentMethod;
-        const isOnlinePayment = paymentMethod === 'card' || paymentMethod === 'online';
+        const isOnlinePayment = APPOINTMENT.isCard(paymentMethod);
         
         if (!isOnlinePayment) {
             return;

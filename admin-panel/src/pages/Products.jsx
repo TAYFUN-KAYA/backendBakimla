@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '../services/adminService';
-import { Package, Search, Eye, EyeOff } from 'lucide-react';
+import { Package, Search, Eye, EyeOff, Plus, Pencil, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
-
+import toast from 'react-hot-toast';
+import ProductModal from '../components/modals/ProductModal';
 
 export default function Products() {
   const [products, setProducts] = useState([]);
@@ -11,10 +12,19 @@ export default function Products() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [isPublished, setIsPublished] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [companies, setCompanies] = useState([]);
 
   useEffect(() => {
     fetchProducts();
   }, [page, search, isPublished]);
+
+  useEffect(() => {
+    adminService.getAllUsers({ userType: 'company', limit: 500, page: 1 }).then((res) => {
+      if (res.data?.success && res.data?.data) setCompanies(res.data.data);
+    }).catch(() => {});
+  }, []);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -35,10 +45,33 @@ export default function Products() {
     }
   };
 
+  const openCreate = () => { setEditingId(null); setModalOpen(true); };
+  const openEdit = (p) => { setEditingId(p._id); setModalOpen(true); };
+  const closeModal = () => { setModalOpen(false); setEditingId(null); };
+  const onModalSave = () => { closeModal(); fetchProducts(); };
+
+  const handleDelete = async (product) => {
+    if (!window.confirm(`"${product.name}" ürününü silmek istediğinize emin misiniz?`)) return;
+    try {
+      await adminService.deleteProduct(product._id);
+      toast.success('Ürün silindi');
+      fetchProducts();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Silme başarısız');
+    }
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Ürünler</h1>
+        <button
+          type="button"
+          onClick={openCreate}
+          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+        >
+          <Plus className="w-5 h-5" /> Ürün Ekle
+        </button>
       </div>
 
       {/* Filters */}
@@ -79,10 +112,12 @@ export default function Products() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ürün</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İşletme</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kategori</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cinsiyet</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fiyat</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stok</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İşlemler</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -103,11 +138,16 @@ export default function Products() {
                         {product.companyId ? (
                           <div className="text-sm">{product.companyId.firstName} {product.companyId.lastName}</div>
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Kozmetik Mağaza</span>
                         )}
                       </td>
                       <td className="px-6 py-4">
                         <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">{product.category}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                          {product.targetGender === 'woman' ? 'Kadın' : product.targetGender === 'man' ? 'Erkek' : 'Unisex'}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm font-bold">
@@ -139,6 +179,26 @@ export default function Products() {
                       <td className="px-6 py-4 text-sm text-gray-500">
                         {format(new Date(product.createdAt), 'dd MMM yyyy')}
                       </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(product)}
+                            className="p-1.5 text-gray-600 hover:bg-gray-100 rounded"
+                            title="Düzenle"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(product)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                            title="Sil"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -167,6 +227,15 @@ export default function Products() {
           </>
         )}
       </div>
+
+      {modalOpen && (
+        <ProductModal
+          productId={editingId}
+          companies={companies}
+          onClose={closeModal}
+          onSave={onModalSave}
+        />
+      )}
     </div>
   );
 }

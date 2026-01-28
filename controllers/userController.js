@@ -86,10 +86,45 @@ const getAllEmployees = async (req, res) => {
 
     console.log('✅ Found employees:', employees.length);
 
+    // Her employee için companyId'den store location'ını ve randevu sayısını ekle
+    const Store = require('../models/Store');
+    const Appointment = require('../models/Appointment');
+    const employeesWithStoreLocation = await Promise.all(
+      employees.map(async (employee) => {
+        const employeeObj = employee.toObject();
+        try {
+          if (employee.companyId) {
+            const companyId = employee.companyId._id || employee.companyId;
+            // Company'nin ilk store'unu bul (location'ı olan)
+            const store = await Store.findOne({ companyId })
+              .select('location')
+              .lean();
+            
+            if (store && store.location && store.location.latitude && store.location.longitude) {
+              employeeObj.storeLocation = {
+                latitude: store.location.latitude,
+                longitude: store.location.longitude,
+              };
+            }
+          }
+          
+          // Randevu sayısını hesapla
+          const appointmentCount = await Appointment.countDocuments({ 
+            employeeId: employee._id 
+          });
+          employeeObj.appointmentCount = appointmentCount || 0;
+        } catch (error) {
+          console.error(`Error loading store location/appointment count for employee ${employee._id}:`, error);
+          employeeObj.appointmentCount = 0;
+        }
+        return employeeObj;
+      })
+    );
+
     res.status(200).json({
       success: true,
-      count: employees.length,
-      data: employees,
+      count: employeesWithStoreLocation.length,
+      data: employeesWithStoreLocation,
     });
   } catch (error) {
     console.error('❌ getAllEmployees error:', error);
@@ -709,7 +744,7 @@ const deleteUser = async (req, res) => {
     const Invoice = require('../models/Invoice');
     const Notification = require('../models/Notification');
     const Favorite = require('../models/Favorite');
-    const Cart = require('../models/Cart');
+    const Basket = require('../models/Basket');
     const Address = require('../models/Address');
     const { Wallet, WalletTransaction, WithdrawalRequest } = require('../models/Wallet');
     const { Points, PointsTransaction } = require('../models/Points');
@@ -787,8 +822,8 @@ const deleteUser = async (req, res) => {
       // Favorite verileri
       Favorite.deleteMany({ userId: userId }),
       
-      // Cart verileri
-      Cart.deleteMany({ userId: userId }),
+      // Basket verileri
+      Basket.deleteMany({ userId: userId }),
       
       // Address verileri
       Address.deleteMany({ userId: userId }),

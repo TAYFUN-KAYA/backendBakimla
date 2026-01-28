@@ -11,7 +11,22 @@ import {
   Package,
   Star,
   UserCheck,
-  LogOut
+  LogOut,
+  Gift,
+  MapPin,
+  Bell,
+  Settings,
+  FileText,
+  Award,
+  Receipt,
+  Heart,
+  ShoppingCart,
+  Tag,
+  Megaphone,
+  Clock,
+  Database,
+  History,
+  Key
 } from 'lucide-react';
 import { authService } from '../services/authService';
 
@@ -20,13 +35,38 @@ const menuItems = [
   { path: '/users', label: 'Kullanıcılar', icon: Users },
   { path: '/stores', label: 'İşletmeler', icon: Store },
   { path: '/appointments', label: 'Randevular', icon: Calendar },
+  { path: '/quick-appointments', label: 'Hızlı Randevular', icon: Clock },
   { path: '/payments', label: 'Ödemeler', icon: CreditCard },
+  { path: '/payment-methods', label: 'Ödeme Yöntemleri', icon: CreditCard },
   { path: '/orders', label: 'Siparişler', icon: ShoppingBag },
   { path: '/wallets', label: 'Cüzdanlar', icon: Wallet },
+  { path: '/islet-kazan', label: 'İşlet Kazan', icon: Gift },
   { path: '/withdrawal-requests', label: 'Para Çekme Talepleri', icon: TrendingUp },
   { path: '/products', label: 'Ürünler', icon: Package },
+  { path: '/baskets', label: 'Sepetler', icon: ShoppingCart },
+  { path: '/favorites', label: 'Favoriler', icon: Heart },
   { path: '/reviews', label: 'Yorumlar', icon: Star },
   { path: '/employees', label: 'Çalışanlar', icon: UserCheck },
+  { path: '/customers', label: 'Müşteriler', icon: Users },
+  { path: '/campaigns', label: 'Kampanyalar', icon: Gift },
+  { path: '/coupons', label: 'Kuponlar', icon: Tag },
+  { path: '/bakimla-store-coupons', label: 'Bakimla Store Kuponları', icon: Tag },
+  { path: '/user-campaigns', label: 'Kullanıcı Kampanyaları', icon: Gift },
+  { path: '/user-coupons', label: 'Kullanıcı Kuponları', icon: Tag },
+  { path: '/user-favorite-stores', label: 'Kullanıcı Favori İşletmeleri', icon: Heart },
+  { path: '/addresses', label: 'Adresler', icon: MapPin },
+  { path: '/notifications', label: 'Bildirimler', icon: Bell },
+  { path: '/services', label: 'Hizmetler', icon: Settings },
+  { path: '/invoices', label: 'Faturalar', icon: Receipt },
+  { path: '/points', label: 'Puanlar', icon: Award },
+  { path: '/rewards', label: 'Ödüller', icon: Award },
+  { path: '/accounting', label: 'Muhasebe', icon: FileText },
+  { path: '/forms', label: 'Formlar', icon: FileText },
+  { path: '/business-home-ads', label: 'İşletme Ana Sayfa Reklamları', icon: Megaphone },
+  { path: '/client-home-ads', label: 'Müşteri Ana Sayfa Reklamları', icon: Megaphone },
+  { path: '/client-center-ads', label: 'Müşteri Merkez Reklamları', icon: Megaphone },
+  { path: '/wallet-transactions', label: 'Cüzdan İşlemleri', icon: History },
+  { path: '/otps', label: 'OTP Kodları', icon: Key },
 ];
 
 export default function Layout() {
@@ -40,13 +80,13 @@ export default function Layout() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-gray-50">
       {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-lg">
-        <div className="p-6 border-b">
+      <aside className="flex flex-col w-64 flex-shrink-0 bg-white shadow-lg overflow-hidden">
+        <div className="flex-shrink-0 p-6 border-b">
           <h1 className="text-2xl font-bold text-primary-600">Bakimla Admin</h1>
         </div>
-        <nav className="mt-6">
+        <nav className="flex-1 min-h-0 overflow-y-auto mt-6">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -64,7 +104,7 @@ export default function Layout() {
             );
           })}
         </nav>
-        <div className="absolute bottom-0 w-64 p-6 border-t">
+        <div className="flex-shrink-0 p-6 border-t">
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-sm font-medium text-gray-700">
@@ -84,7 +124,7 @@ export default function Layout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 min-h-0 overflow-auto">
         <div className="p-8">
           <Outlet />
         </div>

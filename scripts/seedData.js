@@ -14,7 +14,7 @@ const Campaign = require('../models/Campaign');
 const Coupon = require('../models/Coupon');
 const Accounting = require('../models/Accounting');
 const Address = require('../models/Address');
-const Cart = require('../models/Cart');
+const Basket = require('../models/Basket');
 const Favorite = require('../models/Favorite');
 const Form = require('../models/Form');
 const Invoice = require('../models/Invoice');
@@ -38,7 +38,7 @@ const seedData = async () => {
     console.log('🧹 Eski veriler temizleniyor...');
     const modelMapping = {
       User, Store, Product, Appointment, Customer, Wallet, WalletTransaction, WithdrawalRequest,
-      Campaign, Coupon, Accounting, Address, Cart, Favorite, Form, Invoice, Notification,
+      Campaign, Coupon, Accounting, Address, Basket, Favorite, Form, Invoice, Notification,
       OTP, Order, Payment, PaymentMethod, Points, PointsTransaction, Review
     };
 
@@ -184,8 +184,8 @@ const seedData = async () => {
       rating: 5, comment: 'Harika hizmet!', reviewType: 'appointment', isPublished: true, isVerified: true
     }]);
 
-    // 15. Cart
-    await Cart.create([{ userId: normalUser._id, items: [{ productId: product._id, quantity: 1 }], subtotal: 200, total: 200 }]);
+    // 15. Basket
+    await Basket.create([{ userId: normalUser._id, items: [{ productId: product._id, quantity: 1 }], subtotal: 200, total: 200 }]);
 
     // 16. Favorites
     await Favorite.create([

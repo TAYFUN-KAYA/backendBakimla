@@ -85,6 +85,17 @@ const createInvoiceForOrder = async (orderId) => {
       return { success: false, error: 'Sipariş bulunamadı veya ödenmemiş' };
     }
 
+    // OrderNumber kontrolü
+    if (!order.orderNumber || order.orderNumber === '') {
+      console.error('❌ Order number not found for order:', orderId);
+      // Fallback: manuel oluştur
+      const timestamp = Date.now();
+      const random = Math.floor(Math.random() * 10000);
+      order.orderNumber = `ORD-${timestamp}-${random}`;
+      await order.save();
+      console.log('✅ Order number manually created:', order.orderNumber);
+    }
+
     const user = order.userId;
     const address = order.billingAddress;
 

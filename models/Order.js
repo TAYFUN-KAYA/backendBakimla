@@ -134,6 +134,10 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Coupon',
     },
+    bakimlaStoreCouponId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'BakimlaStoreCoupon',
+    },
   },
   {
     timestamps: true,
@@ -145,14 +149,45 @@ orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ paymentStatus: 1 });
 
-// Order Number oluştur
+// Order Number oluştur (fallback - eğer orderController'da set edilmediyse)
 orderSchema.pre('save', async function (next) {
-  if (!this.orderNumber) {
+  try {
+    // Eğer orderNumber zaten varsa, bir şey yapma
+    if (this.orderNumber && this.orderNumber !== '') {
+      return next();
+    }
+
+    // OrderNumber yoksa oluştur
     const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000);
+    const random = Math.floor(Math.random() * 10000);
     this.orderNumber = `ORD-${timestamp}-${random}`;
+    
+    // Unique kontrolü için tekrar dene (eğer duplicate varsa)
+    let isUnique = false;
+    let attempts = 0;
+    const OrderModel = mongoose.model('Order');
+    
+    while (!isUnique && attempts < 5) {
+      const existing = await OrderModel.findOne({ orderNumber: this.orderNumber });
+      if (!existing || existing._id.toString() === this._id.toString()) {
+        isUnique = true;
+      } else {
+        // Duplicate varsa yeni bir numara oluştur
+        const newTimestamp = Date.now();
+        const newRandom = Math.floor(Math.random() * 10000);
+        this.orderNumber = `ORD-${newTimestamp}-${newRandom}`;
+        attempts++;
+        // Kısa bekleme
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+    }
+    
+    next();
+  } catch (error) {
+    console.error('❌ Order number pre-save hook error:', error);
+    // Hata olsa bile devam et (orderController'da zaten set ediliyor)
+    next();
   }
-  next();
 });
 
 module.exports = mongoose.model('Order', orderSchema);

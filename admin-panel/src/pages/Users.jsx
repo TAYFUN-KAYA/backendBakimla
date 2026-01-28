@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '../services/adminService';
-import { Search, User, Mail, Phone } from 'lucide-react';
+import { Search, User, Mail, Phone, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
+import UserModal from '../components/modals/UserModal';
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -10,10 +11,19 @@ export default function Users() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [userType, setUserType] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [companies, setCompanies] = useState([]);
 
   useEffect(() => {
     fetchUsers();
   }, [page, search, userType]);
+
+  useEffect(() => {
+    adminService.getAllUsers({ userType: 'company', limit: 500, page: 1 }).then((res) => {
+      if (res.data?.success && res.data?.data) setCompanies(res.data.data);
+    }).catch(() => {});
+  }, []);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -99,6 +109,7 @@ export default function Users() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İletişim</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kayıt Tarihi</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İşlemler</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -106,8 +117,12 @@ export default function Users() {
                     <tr key={user._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                            <User className="w-6 h-6 text-primary-600" />
+                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
+                            {user.profileImage ? (
+                              <img src={user.profileImage} alt="" className="h-10 w-10 object-cover" />
+                            ) : (
+                              <User className="w-6 h-6 text-primary-600" />
+                            )}
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">
@@ -141,6 +156,16 @@ export default function Users() {
                           </span>
                         )}
                       </td>
+                      <td className="px-6 py-4">
+                        <button
+                          type="button"
+                          onClick={() => { setEditingId(user._id); setModalOpen(true); }}
+                          className="p-1.5 text-gray-600 hover:bg-gray-100 rounded"
+                          title="Düzenle"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -171,6 +196,15 @@ export default function Users() {
           </>
         )}
       </div>
+
+      {modalOpen && (
+        <UserModal
+          userId={editingId}
+          companies={companies}
+          onClose={() => { setModalOpen(false); setEditingId(null); }}
+          onSave={() => { setModalOpen(false); setEditingId(null); fetchUsers(); }}
+        />
+      )}
     </div>
   );
 }

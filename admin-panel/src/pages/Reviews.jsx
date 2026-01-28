@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '../services/adminService';
-import { Star, Eye, EyeOff, MessageSquare } from 'lucide-react';
+import { Star, Eye, EyeOff, Search } from 'lucide-react';
 import { format } from 'date-fns';
 
 
@@ -11,17 +11,22 @@ export default function Reviews() {
   const [totalPages, setTotalPages] = useState(1);
   const [reviewType, setReviewType] = useState('');
   const [isPublished, setIsPublished] = useState('');
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
 
+  useEffect(() => { setPage(1); }, [search, sortBy, sortOrder]);
   useEffect(() => {
     fetchReviews();
-  }, [page, reviewType, isPublished]);
+  }, [page, reviewType, isPublished, search, sortBy, sortOrder]);
 
   const fetchReviews = async () => {
     setLoading(true);
     try {
-      const params = { page, limit: 20 };
+      const params = { page, limit: 20, sortBy, sortOrder };
       if (reviewType) params.reviewType = reviewType;
       if (isPublished) params.isPublished = isPublished;
+      if (search.trim()) params.search = search.trim();
 
       const response = await adminService.getAllReviews(params);
       if (response.data.success) {
@@ -61,7 +66,17 @@ export default function Reviews() {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Kullanıcı adı, e-posta veya yorum ile ara..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
           <select
             value={reviewType}
             onChange={(e) => setReviewType(e.target.value)}
@@ -81,6 +96,23 @@ export default function Reviews() {
             <option value="">Tüm Yorumlar</option>
             <option value="true">Yayında</option>
             <option value="false">Yayında Değil</option>
+          </select>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="createdAt">Tarih</option>
+            <option value="rating">Puan</option>
+            <option value="reviewType">Tip</option>
+          </select>
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="desc">Yeniden eskiye</option>
+            <option value="asc">Eskiden yeniye</option>
           </select>
         </div>
       </div>

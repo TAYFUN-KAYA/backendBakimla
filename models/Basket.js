@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
 
 /**
- * Cart Model
+ * Basket Model
  * Sepet (data izni ile tutulabilir)
  */
-const cartSchema = new mongoose.Schema(
+const basketSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -72,17 +72,43 @@ const cartSchema = new mongoose.Schema(
   }
 );
 
-cartSchema.index({ userId: 1 });
+basketSchema.index({ userId: 1 });
 
 // Sepet toplamını hesapla
-cartSchema.methods.calculateTotal = async function () {
-  const Product = mongoose.model('Product');
+// Optimize edilmiş versiyon: populate edilmiş verilerle çalışır veya batch query kullanır
+basketSchema.methods.calculateTotal = async function (populatedProducts = null) {
   let subtotal = 0;
 
-  for (const item of this.items) {
-    const product = await Product.findById(item.productId);
-    if (product && product.isActive && product.isPublished) {
-      subtotal += product.price * item.quantity;
+  if (populatedProducts) {
+    // Populate edilmiş veriler kullanılıyor - çok hızlı
+    for (const item of this.items) {
+      const product = populatedProducts.find(p => p._id.toString() === item.productId.toString());
+      if (product && product.isActive && product.isPublished) {
+        const price = product.discountPrice || product.price;
+        subtotal += price * item.quantity;
+      }
+    }
+  } else {
+    // Populate edilmemişse, optimize edilmiş batch query kullan
+    const Product = mongoose.model('Product');
+    const productIds = this.items.map(item => item.productId);
+    
+    if (productIds.length > 0) {
+      const products = await Product.find({ 
+        _id: { $in: productIds },
+        isActive: true,
+        isPublished: true
+      });
+      
+      const productMap = new Map(products.map(p => [p._id.toString(), p]));
+      
+      for (const item of this.items) {
+        const product = productMap.get(item.productId.toString());
+        if (product) {
+          const price = product.discountPrice || product.price;
+          subtotal += price * item.quantity;
+        }
+      }
     }
   }
 
@@ -92,5 +118,4 @@ cartSchema.methods.calculateTotal = async function () {
   return this.total;
 };
 
-module.exports = mongoose.model('Cart', cartSchema);
-
+module.exports = mongoose.model('Basket', basketSchema);

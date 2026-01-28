@@ -145,6 +145,12 @@ const withdrawalRequestSchema = new mongoose.Schema(
       enum: ['pending', 'processing', 'completed', 'rejected', 'cancelled'],
       default: 'pending',
     },
+    /** Kaynak: wallet = cüzdan bakiyesinden talep; islet_kazan = İşlet Kazan priminden oluşturulan talep */
+    source: {
+      type: String,
+      enum: ['wallet', 'islet_kazan'],
+      default: 'wallet',
+    },
     rejectionReason: {
       type: String,
       trim: true,

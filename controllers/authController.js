@@ -168,7 +168,7 @@ const verifyOTP = async (req, res) => {
     // OTP'yi bul
     let otp;
     const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
-    const isMagicNumber = isDev && purpose === 'admin-login' && code === '123456';
+    const isMagicNumber = isDev && purpose === 'admin-login' && code === '001234';
 
     if (isMagicNumber) {
       // Magic number kullanıldığında OTP kaydı aramaya gerek yok

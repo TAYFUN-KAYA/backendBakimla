@@ -22,6 +22,11 @@ const notificationSchema = new mongoose.Schema(
       enum: ['info', 'success', 'warning', 'error', 'appointment', 'payment', 'system'],
       default: 'info',
     },
+    kind: {
+      type: String,
+      enum: ['upcoming', 'cancel', 'campaign', 'other', 'order', 'payment_success', 'payment_failed'],
+      default: 'other',
+    },
     isRead: {
       type: Boolean,
       default: false,
@@ -32,7 +37,7 @@ const notificationSchema = new mongoose.Schema(
     },
     relatedModel: {
       type: String,
-      enum: ['Appointment', 'Accounting', 'Customer', 'Store'],
+      enum: ['Appointment', 'Accounting', 'Customer', 'Store', 'Order', 'Payment'],
     },
   },
   {

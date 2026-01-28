@@ -7,7 +7,7 @@ const User = require('../models/User');
  */
 const createNotification = async (req, res) => {
   try {
-    const { userId, title, message, type, relatedId, relatedModel } = req.body;
+    const { userId, title, message, type, kind, relatedId, relatedModel } = req.body;
 
     if (!userId || !title || !message) {
       return res.status(400).json({
@@ -29,6 +29,7 @@ const createNotification = async (req, res) => {
       title,
       message,
       type: type || 'info',
+      kind: kind || 'other',
       relatedId,
       relatedModel,
     });
@@ -238,16 +239,17 @@ const deleteNotification = async (req, res) => {
 
 /**
  * deleteAllNotifications
- * Kullanıcının tüm bildirimlerini siler
+ * Kullanıcının tüm bildirimlerini siler (authMiddleware'den gelen userId ile)
  */
 const deleteAllNotifications = async (req, res) => {
   try {
-    const { userId } = req.body;
+    // authMiddleware'den gelen userId'yi kullan
+    const userId = req.user?._id || req.body?.userId;
 
     if (!userId) {
       return res.status(400).json({
         success: false,
-        message: 'userId gereklidir',
+        message: 'Kullanıcı bilgisi bulunamadı',
       });
     }
 

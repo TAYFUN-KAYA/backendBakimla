@@ -5,15 +5,15 @@ const {
   getOrders,
   getOrder,
   cancelOrder,
-  initializeOrderPayment,
+  processOrderPayment,
 } = require('../controllers/orderController');
 const { authMiddleware } = require('../middleware/authMiddleware');
 
 // Sipariş oluştur
 router.post('/', authMiddleware, createOrder);
 
-// Sipariş için ödeme başlat
-router.post('/:orderId/payment', authMiddleware, initializeOrderPayment);
+// Sipariş için ödeme işle
+router.post('/:orderId/payment', authMiddleware, processOrderPayment);
 
 // Siparişleri listele
 router.get('/', authMiddleware, getOrders);

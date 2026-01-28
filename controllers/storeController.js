@@ -4,6 +4,7 @@ const User = require("../models/User");
 const Customer = require("../models/Customer");
 const Appointment = require("../models/Appointment");
 const QuickAppointment = require("../models/QuickAppointment");
+const Review = require("../models/Review");
 const { Wallet } = require("../models/Wallet");
 const { validateSectorIds, getSectorById } = require("../constants/sectors");
 const { deleteFromS3, extractS3Key } = require("../utils/s3Service");
@@ -229,7 +230,96 @@ const getCompanyStores = async (req, res) => {
 };
 
 const getStoreDetails = async (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented" });
+  try {
+    const { id } = req.params;
+
+    // Validate storeId
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Geçerli bir işletme ID'si gereklidir",
+      });
+    }
+
+    // Get store details with populated company info
+    const store = await Store.findById(id).populate('companyId', 'firstName lastName profileImage');
+
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: "İşletme bulunamadı",
+      });
+    }
+
+    // Calculate average rating from reviews
+    const ratingResult = await Review.aggregate([
+      {
+        $match: {
+          companyId: store.companyId._id || store.companyId,
+          isPublished: true,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          avgRating: { $avg: '$rating' },
+          reviewCount: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const rating = ratingResult[0]?.avgRating || store.rating || 0;
+    const reviewCount = ratingResult[0]?.reviewCount || store.reviewCount || 0;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        id: store._id,
+        _id: store._id,
+        storeName: store.storeName,
+        businessName: store.businessName,
+        name: store.storeName || store.businessName,
+        logo: store.appIcon,
+        appIcon: store.appIcon,
+        coverImage: store.interiorImage || store.exteriorImage,
+        interiorImage: store.interiorImage,
+        interiorImages: store.interiorImages || (store.interiorImage ? [store.interiorImage] : []),
+        exteriorImage: store.exteriorImage,
+        description: store.businessDescription,
+        businessDescription: store.businessDescription,
+        address: {
+          fullAddress: store.address?.fullAddress || store.location?.address || '',
+          city: store.address?.city || '',
+          district: store.address?.district || '',
+          latitude: store.location?.latitude || store.address?.latitude || null,
+          longitude: store.location?.longitude || store.address?.longitude || null,
+        },
+        location: store.location || {},
+        businessField: store.businessField,
+        sectors: store.sectors || [],
+        services: store.services || [],
+        workingDays: store.workingDays || [],
+        rating: rating,
+        reviewCount: reviewCount,
+        verified: true, // TODO: Add verification logic
+        isOpen: store.isOpen,
+        storeCode: store.storeCode,
+        storeLink: store.storeLink,
+        serviceImages: store.serviceImages || [],
+        companyId: store.companyId?._id,
+        companyName: store.companyId?.firstName 
+          ? `${store.companyId.firstName} ${store.companyId.lastName || ''}`.trim()
+          : '',
+      },
+    });
+  } catch (error) {
+    console.error('getStoreDetails error:', error);
+    res.status(500).json({
+      success: false,
+      message: "İşletme detayları getirilirken hata oluştu",
+      error: error.message,
+    });
+  }
 };
 
 const getStoreByCompanyId = async (req, res) => {
@@ -1190,6 +1280,36 @@ const getStoresByCategory = async (req, res) => {
       .limit(parseInt(limit))
       .lean();
 
+    // Her store için rating hesapla
+    const storesWithRating = await Promise.all(
+      stores.map(async (store) => {
+        const ratingResult = await Review.aggregate([
+          {
+            $match: {
+              companyId: store.companyId._id || store.companyId,
+              isPublished: true,
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              avgRating: { $avg: '$rating' },
+              reviewCount: { $sum: 1 },
+            },
+          },
+        ]);
+
+        const avgRating = ratingResult[0]?.avgRating || 0;
+        const reviewCount = ratingResult[0]?.reviewCount || 0;
+
+        return {
+          ...store,
+          rating: avgRating > 0 ? parseFloat(avgRating.toFixed(1)) : store.rating || 0,
+          reviewCount: reviewCount || store.reviewCount || 0,
+        };
+      })
+    );
+
     const total = await Store.countDocuments({
       $or: [
         { "sectors.key": category },
@@ -1200,11 +1320,11 @@ const getStoresByCategory = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      count: stores.length,
+      count: storesWithRating.length,
       total,
       page: parseInt(page),
       totalPages: Math.ceil(total / parseInt(limit)),
-      data: stores,
+      data: storesWithRating,
     });
   } catch (error) {
     console.error("getStoresByCategory error:", error);
@@ -1246,16 +1366,39 @@ const getPopularStoresByCategory = async (req, res) => {
       )
       .lean();
 
-    // Her store için randevu sayısını hesapla
+    // Her store için randevu sayısını ve rating'i hesapla
     const storesWithAppointmentCount = await Promise.all(
       stores.map(async (store) => {
         const appointmentCount = await Appointment.countDocuments({
           companyId: store.companyId._id || store.companyId,
           serviceCategory: category,
         });
+
+        // Rating hesapla
+        const ratingResult = await Review.aggregate([
+          {
+            $match: {
+              companyId: store.companyId._id || store.companyId,
+              isPublished: true,
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              avgRating: { $avg: '$rating' },
+              reviewCount: { $sum: 1 },
+            },
+          },
+        ]);
+
+        const avgRating = ratingResult[0]?.avgRating || 0;
+        const reviewCount = ratingResult[0]?.reviewCount || 0;
+
         return {
           ...store,
           appointmentCount,
+          rating: avgRating > 0 ? parseFloat(avgRating.toFixed(1)) : store.rating || 0,
+          reviewCount: reviewCount || store.reviewCount || 0,
         };
       })
     );
@@ -1280,6 +1423,46 @@ const getPopularStoresByCategory = async (req, res) => {
   }
 };
 
+// Get store employees (company and employee types)
+const getStoreEmployees = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+
+    // Find store and populate companyId
+    const store = await Store.findById(storeId).populate('companyId');
+    
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'İşletme bulunamadı',
+      });
+    }
+
+    const companyId = store.companyId?._id || store.companyId;
+
+    // Get all users with userType 'company' or 'employee' belonging to this company
+    const employees = await User.find({
+      $or: [
+        { _id: companyId, userType: 'company' }, // Company owner
+        { companyId: companyId, userType: 'employee' } // Employees
+      ]
+    }).select('firstName lastName profileImage position userType phoneNumber email');
+
+    return res.status(200).json({
+      success: true,
+      data: employees,
+      count: employees.length,
+    });
+  } catch (error) {
+    console.error('Get store employees error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Çalışanlar yüklenirken bir hata oluştu',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createStore,
   getCompanyStores,
@@ -1298,4 +1481,5 @@ module.exports = {
   getQuickAppointments,
   createOrUpdateQuickAppointment,
   deleteQuickAppointment,
+  getStoreEmployees,
 };

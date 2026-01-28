@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '../services/adminService';
-import { ShoppingBag, Package, User, DollarSign } from 'lucide-react';
+import { ShoppingBag, Package, DollarSign, Eye, Search } from 'lucide-react';
 import { format } from 'date-fns';
-
+import OrderDetailModal from '../components/modals/OrderDetailModal';
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -11,10 +11,13 @@ export default function Orders() {
   const [totalPages, setTotalPages] = useState(1);
   const [status, setStatus] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('');
+  const [detailId, setDetailId] = useState(null);
+  const [search, setSearch] = useState('');
 
+  useEffect(() => { setPage(1); }, [search]);
   useEffect(() => {
     fetchOrders();
-  }, [page, status, paymentStatus]);
+  }, [page, status, paymentStatus, search]);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -22,6 +25,7 @@ export default function Orders() {
       const params = { page, limit: 20 };
       if (status) params.status = status;
       if (paymentStatus) params.paymentStatus = paymentStatus;
+      if (search.trim()) params.search = search.trim();
 
       const response = await adminService.getAllOrders(params);
       if (response.data.success) {
@@ -59,7 +63,17 @@ export default function Orders() {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Sipariş no, müşteri adı veya e-posta ile ara..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
@@ -102,6 +116,7 @@ export default function Orders() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tutar</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">İşlemler</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -155,6 +170,17 @@ export default function Orders() {
                       <td className="px-6 py-4 text-sm text-gray-500">
                         {format(new Date(order.createdAt), 'dd MMM yyyy')}
                       </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => setDetailId(order._id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200"
+                          title="Detay"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Detay
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -183,6 +209,17 @@ export default function Orders() {
           </>
         )}
       </div>
+
+      {detailId && (
+        <OrderDetailModal
+          orderId={detailId}
+          onClose={() => setDetailId(null)}
+          onSave={() => {
+            setDetailId(null);
+            fetchOrders();
+          }}
+        />
+      )}
     </div>
   );
 }

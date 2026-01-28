@@ -11,7 +11,7 @@ const connectDB = require('../config/db');
  * node scripts/createAdmin.js
  * 
  * Veya parametrelerle:
- * node scripts/createAdmin.js "Admin" "User" "admin@bakimla.com" "5551234567" "male" "admin123"
+ * node scripts/createAdmin.js "Admin" "User" "admin@bakimla.com" "5551234567" "male" "1234"
  */
 
 const createAdmin = async () => {
@@ -25,9 +25,9 @@ const createAdmin = async () => {
     const firstName = args[0] || 'Admin';
     const lastName = args[1] || 'User';
     const email = args[2] || 'admin@bakimla.com';
-    const phoneNumber = args[3] || '5551234567';
+    const phoneNumber = args[3] || '5554444444';
     const gender = args[4] || 'male';
-    const password = args[5] || 'Admin123!';
+    const password = args[5] || '123456';
 
     // Mevcut admin kontrolü
     const existingAdmin = await User.findOne({

@@ -319,6 +319,56 @@ const getCosmeticStorePromos = async (req, res) => {
   }
 };
 
+/**
+ * getStoreCampaigns
+ * İşletmeye ait aktif kampanyaları getirir
+ */
+const getStoreCampaigns = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const now = new Date();
+
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'İşletme ID gereklidir',
+      });
+    }
+
+    // Find campaigns for this store's company
+    const Store = require('../models/Store');
+    const store = await Store.findById(storeId);
+    
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'İşletme bulunamadı',
+      });
+    }
+
+    const campaigns = await Campaign.find({
+      companyId: store.companyId,
+      isActive: true,
+      startDate: { $lte: now },
+      endDate: { $gte: now },
+    })
+      .sort({ startDate: -1 })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      count: campaigns.length,
+      data: campaigns,
+    });
+  } catch (error) {
+    console.error('getStoreCampaigns error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createCampaign,
   getCompanyCampaigns,
@@ -326,5 +376,6 @@ module.exports = {
   updateCampaign,
   deleteCampaign,
   getCosmeticStorePromos,
+  getStoreCampaigns,
 };
 
