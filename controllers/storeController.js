@@ -1423,6 +1423,84 @@ const getPopularStoresByCategory = async (req, res) => {
   }
 };
 
+/**
+ * joinStoreByCode
+ * İşletme kodu ile mevcut kullanıcıyı o işletmenin çalışanı yapar (isApproved: false).
+ * İşletme sahibi profilden onay bekleyenlere girip onaylayınca çalışan anasayfaya girebilir.
+ */
+const joinStoreByCode = async (req, res) => {
+  try {
+    const { storeCode } = req.body;
+    if (!storeCode || String(storeCode).trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'İşletme kodu zorunludur',
+      });
+    }
+
+    const store = await Store.findOne({ storeCode: String(storeCode).trim() });
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bu kod ile işletme bulunamadı',
+      });
+    }
+
+    const companyId = store.companyId?._id || store.companyId;
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Kullanıcı bulunamadı',
+      });
+    }
+
+    // Zaten bu işletmenin onaylı çalışanıysa
+    if (user.userType === 'employee' && user.companyId?.toString() === companyId.toString() && user.isApproved) {
+      return res.status(200).json({
+        success: true,
+        message: 'Zaten bu işletmenin çalışanısınız',
+        data: user.toObject ? user.toObject() : user,
+      });
+    }
+
+    // Zaten bu işletmeye başvurmuş, onay bekliyorsa
+    if (user.userType === 'employee' && user.companyId?.toString() === companyId.toString() && !user.isApproved) {
+      const u = await User.findById(userId).select('-password').lean();
+      return res.status(200).json({
+        success: true,
+        message: 'Başvurunuz zaten beklemede',
+        data: u,
+      });
+    }
+
+    // Kullanıcıyı çalışan yap: companyId bağla, onay bekleyen
+    user.userType = 'employee';
+    user.companyId = companyId;
+    user.isApproved = false;
+    user.activeStoreId = undefined;
+    user.activeStoreIds = [];
+    await user.save();
+
+    const userResponse = user.toObject ? user.toObject() : user;
+    delete userResponse.password;
+
+    return res.status(200).json({
+      success: true,
+      message: 'İşletmeye başvurunuz alındı. İşletme sahibi onayladıktan sonra giriş yapabileceksiniz.',
+      data: userResponse,
+    });
+  } catch (error) {
+    console.error('joinStoreByCode error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'İşletmeye katılırken bir hata oluştu',
+    });
+  }
+};
+
 // Get store employees (company and employee types)
 const getStoreEmployees = async (req, res) => {
   try {
@@ -1476,6 +1554,7 @@ module.exports = {
   getStoreCustomers,
   createCustomer,
   debugUserStoreRelations,
+  joinStoreByCode,
   getStoresByCategory,
   getPopularStoresByCategory,
   getQuickAppointments,

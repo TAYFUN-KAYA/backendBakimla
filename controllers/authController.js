@@ -54,28 +54,22 @@ const sendOTPCode = async (req, res) => {
       }
     }
 
-    // Giriş veya şifre sıfırlama için kullanıcı kontrolü - belirli userType için
+    // Giriş veya şifre sıfırlama için kullanıcı kontrolü
+    // Önce verilen userType ile ara; bulunamazsa (örn. uygulama company gönderir ama kullanıcı employee) diğer tipi dene
     if (purpose === 'login' || purpose === 'reset-password') {
-      if (!userType) {
-        return res.status(400).json({
-          success: false,
-          message: 'Giriş için userType zorunludur',
-        });
+      const preferredType = userType || 'company';
+      let user = await User.findOne({ phoneNumber, userType: preferredType });
+      if (!user && (preferredType === 'company' || preferredType === 'employee')) {
+        const fallbackType = preferredType === 'company' ? 'employee' : 'company';
+        user = await User.findOne({ phoneNumber, userType: fallbackType });
       }
-      const user = await User.findOne({ phoneNumber, userType });
       if (!user) {
         return res.status(404).json({
           success: false,
           message: 'Bu telefon numarası ile kayıtlı kullanıcı bulunamadı',
         });
       }
-
-      if (user.userType === 'employee' && !user.isApproved) {
-        return res.status(403).json({
-          success: false,
-          message: 'Hesabınız henüz onaylanmadı. Lütfen admin onayını bekleyin.',
-        });
-      }
+      // Onay bekleyen çalışana da OTP gönder (giriş yapıp "Onay Bekleniyor" ekranını görsün)
     }
 
     // 6 haneli OTP kodu oluştur
@@ -281,15 +275,13 @@ const verifyOTP = async (req, res) => {
         },
       });
     } else if (purpose === 'login') {
-      // Giriş işlemi - belirli userType için
-      if (!userType) {
-        return res.status(400).json({
-          success: false,
-          message: 'Giriş için userType zorunludur',
-        });
+      // Giriş: önce body'deki userType ile ara, bulunamazsa company/employee fallback
+      const preferredType = userType || 'company';
+      let user = await User.findOne({ phoneNumber, userType: preferredType });
+      if (!user && (preferredType === 'company' || preferredType === 'employee')) {
+        const fallbackType = preferredType === 'company' ? 'employee' : 'company';
+        user = await User.findOne({ phoneNumber, userType: fallbackType });
       }
-
-      const user = await User.findOne({ phoneNumber, userType });
 
       if (!user) {
         return res.status(404).json({
@@ -298,13 +290,7 @@ const verifyOTP = async (req, res) => {
         });
       }
 
-      if (user.userType === 'employee' && !user.isApproved) {
-        return res.status(403).json({
-          success: false,
-          message: 'Hesabınız henüz onaylanmadı. Lütfen admin onayını bekleyin.',
-        });
-      }
-
+      // Onay bekleyen çalışan da giriş yapabilsin; uygulama CreateBusinessFinal'a yönlendirir
       const token = generateToken(user._id);
       const userResponse = user.toObject();
       delete userResponse.password;

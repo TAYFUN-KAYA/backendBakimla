@@ -13,6 +13,7 @@ const {
   getStoreCustomers,
   createCustomer,
   debugUserStoreRelations,
+  joinStoreByCode,
   getStoresByCategory,
   getPopularStoresByCategory,
   getQuickAppointments,
@@ -23,6 +24,7 @@ const {
 const { companyMiddleware, authMiddleware } = require('../middleware/authMiddleware');
 
 router.post('/', companyMiddleware, createStore);
+router.post('/join-by-code', authMiddleware, joinStoreByCode);
 router.get('/', getAllStores);
 router.get('/debug/relations', debugUserStoreRelations); // Debug endpoint
 
