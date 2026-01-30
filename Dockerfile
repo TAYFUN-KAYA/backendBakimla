@@ -3,11 +3,14 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# bcrypt native modülü için build araçları (Alpine)
+RUN apk add --no-cache python3 make g++
+
 # Bağımlılıklar için önce package dosyalarını kopyala
 COPY package.json package-lock.json* ./
 
-# Sadece production bağımlılıkları (devDependencies yok)
-RUN npm ci --only=production --ignore-scripts || npm install --only=production --ignore-scripts
+# Script'ler çalışsın ki bcrypt native binding derlensin
+RUN npm ci --only=production 2>/dev/null || npm install --only=production
 
 # Uygulama kodunu kopyala
 COPY . .
