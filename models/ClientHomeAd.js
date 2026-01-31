@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-
+const { Colors } = require('../../BakimlaBusinessV2/src/constants/colors');
 const clientHomeAdSchema = new mongoose.Schema(
   {
     title: {
@@ -47,7 +47,7 @@ const clientHomeAdSchema = new mongoose.Schema(
     },
     color: {
       type: String,
-      default: '#6B25FF',
+      default: Colors.purple,
       trim: true,
     },
     order: {

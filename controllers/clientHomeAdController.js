@@ -1,5 +1,5 @@
 const ClientHomeAd = require('../models/ClientHomeAd');
-
+const { Colors } = require('../../BakimlaBusinessV2/src/constants/colors');
 /**
  * getActiveClientHomeAds
  * Aktif reklamları getirir (tarih kontrolü ile)
@@ -30,7 +30,7 @@ const getActiveClientHomeAds = async (req, res) => {
       subtitle: ad.subtitle || '',
       imageUri: ad.image,
       image: ad.image,
-      color: ad.color || (index % 2 === 0 ? '#6B25FF' : '#60F6A7'),
+      color: ad.color || (index % 2 === 0 ? Colors.purple : Colors.primaryGreen),
       link: ad.link || null,
     }));
 
@@ -91,7 +91,7 @@ const createClientHomeAd = async (req, res) => {
       title: title || null,
       subtitle: subtitle || null,
       link: link || null,
-      color: color || '#6B25FF',
+      color: color || Colors.purple,
       order: order || 0,
       isActive: isActive !== undefined ? isActive : true,
       startDate: startDate || null,
@@ -128,7 +128,7 @@ const updateClientHomeAd = async (req, res) => {
         title: title !== undefined ? title : null,
         subtitle: subtitle !== undefined ? subtitle : null,
         link: link !== undefined ? link : null,
-        color: color !== undefined ? color : '#6B25FF',
+        color: color !== undefined ? color : Colors.purple,
         order: order !== undefined ? order : 0,
         isActive: isActive !== undefined ? isActive : true,
         startDate: startDate !== undefined ? startDate : null,

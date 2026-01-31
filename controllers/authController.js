@@ -120,11 +120,12 @@ const sendOTPCode = async (req, res) => {
 
     console.log(`OTP Code for ${phoneNumber}: ${code}`);
 
+    const isDemoMod = process.env.DEMO_MOD === 'true';
     res.status(200).json({
       success: true,
       message: 'OTP kodu oluşturuldu (SMS Devre Dışı)',
       data: {
-        code: code,
+        ...(isDemoMod && { code }),
         expiresIn: 600,
       },
     });
